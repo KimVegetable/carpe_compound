@@ -1,8 +1,6 @@
+import unittest
 from carpe_compound import COMPOUND
 import sys
-import os
-import compoundfiles
-from mariadb import MariaDB
 
 
 def main(filePath):
@@ -22,10 +20,7 @@ def main(filePath):
     print("fileType : " + str(object.fileType))
     print("filePath : " + str(object.filePath))
 
-    object.ParseDocument()
-
-
-
+    object.parse()
 
     object.fp.close()
 

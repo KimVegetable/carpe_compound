@@ -43,16 +43,20 @@ class COMPOUND:
         self.isRestorable = self.CONST_DOCUMENT_UNRESTORABLE
         self.isEncrypted = self.CONST_DOCUMENT_NO_ENCRYPTED
 
+    def __enter__(self):
+        raise NotImplementedError
 
+    def __exit__(self):
+        raise NotImplementedError
 
-    def ParseDocument(self):
+    def parse(self):
 
         if self.fileType == "xls" :
-            result = XLSParser()
+            result = self.parse_xls()
         elif self.fileType == "ppt" :
-            result = PPTParser()
+            result = self.parse_ppt()
         elif self.fileType == "doc" :
-            result = DOCParser()
+            result = self.parse_doc()
 
 
         if result == self.CONST_SUCCESS:
@@ -60,8 +64,11 @@ class COMPOUND:
         elif result == self.CONST_ERROR:
             return self.CONST_ERROR
 
+    def parse_xls(self):
+        raise NotImplementedError
 
+    def parse_ppt(self):
+        raise NotImplementedError
 
-
-
-
+    def parse_doc(self):
+        raise NotImplementedError
