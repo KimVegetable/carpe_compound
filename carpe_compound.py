@@ -75,8 +75,8 @@ class Compound:
         records = []
 
         # 원하는 스트림 f에 모두 읽어오기
-        f = self.fp.open('Workbook').read()
-
+        test = self.fp.open('Workbook').read()
+        f = bytearray(test)
         # 스트림 내부 모두 파싱해서 데이터 출력
         tempOffset = 0
 
@@ -96,8 +96,8 @@ class Compound:
                 sstNum = records.index(record)
                 sstOffset = record['offset']
                 sstLen = record['length']
-            #if record['type'] == 0x3C:
-            #    f[record['offset']:record['offset']+4] = bytearray(b'\xAA\xAA\xAA\xAA')
+            if record['type'] == 0x3C:
+                f[record['offset']:record['offset']+4] = bytearray(b'\xAA\xAA\xAA\xAA')
 
 
 
@@ -110,9 +110,10 @@ class Compound:
 
         for i in range(0, cstUnique):
             string = ""
-
+            if(cntStream > len(f)):
+                break
             # if start is Continue
-            if f[cntStream: cntStream + 2] == b'\x3C\x00':
+            if f[cntStream: cntStream + 4] == b'\xAA\xAA\xAA\xAA':
                 cntStream += 4
 
             cch = struct.unpack('<H', f[cntStream: cntStream + 2])[0]  ### 문자열 길이
@@ -123,6 +124,13 @@ class Compound:
             if cch == 0x00 and flags == 0x00:
                 continue
 
+            if cch == 0x00:
+                break
+
+            if flags & 0x02 or flags >= 0x10:
+                break
+
+
             if (flags & 0b00000001 == 0b00000001):
                 fHighByte = 0x01
             else:
@@ -132,6 +140,7 @@ class Compound:
                 fExtSt = 0x01
             else:
                 fExtSt = 0x00
+
             if (flags & 0b00001000 == 0b00001000):
                 fRichSt = 0x01
             else:
@@ -140,13 +149,15 @@ class Compound:
             if fRichSt == 0x01:
                 cRun = struct.unpack('<H', f[cntStream: cntStream + 2])[0]
                 cntStream += 2
+
             if fExtSt == 0x01:
+                cbExtRst = struct.unpack('<I', f[cntStream: cntStream + 4])[0]
                 cntStream += 4
 
             if fHighByte == 0x00:  ### Ascii
                 bAscii = True
                 for j in range(0, cch):
-                    if f[cntStream : cntStream + 2] == b'\x3C\x00':
+                    if f[cntStream : cntStream + 4] == b'\xAA\xAA\xAA\xAA':
                         if f[cntStream + 4] == 0x00 or f[cntStream + 4] == 0x01:
                             cntStream += 4
 
@@ -177,7 +188,7 @@ class Compound:
                 bAscii = False
                 for j in range(0, cch):
 
-                    if f[cntStream : cntStream + 2] == b'\x3C\x00':
+                    if f[cntStream : cntStream + 4] == b'\xAA\xAA\xAA\xAA':
                         if f[cntStream + 4] == 0x00 or f[cntStream + 4] == 0x01:
                             cntStream += 4
 
@@ -187,6 +198,7 @@ class Compound:
                                 bAscii = False
 
                             cntStream += 1
+
 
                     if bAscii == True:
                         try :
@@ -205,10 +217,22 @@ class Compound:
                             continue
 
             print(str(i) + " : " + string)
+
             if fRichSt == 0x01:
+                if f[cntStream: cntStream + 4] == b'\xAA\xAA\xAA\xAA':
+                    cntStream += 4
                 cntStream += int(cRun) * 4
+
             if fExtSt == 0x01:
-                cntStream += 16
+                for i in range(0, cbExtRst):
+                    if cntStream > len(f):
+                        break
+
+                    if f[cntStream: cntStream + 4] == b'\xAA\xAA\xAA\xAA':
+                        if i + 4 <= cbExtRst:
+                            cntStream += 4
+
+                    cntStream += 1
 
 
 
