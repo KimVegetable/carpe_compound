@@ -1,5 +1,5 @@
 import unittest
-from carpe_compound import COMPOUND
+from carpe_compound import Compound
 import sys
 
 
@@ -9,7 +9,7 @@ def main(filePath):
         maria.query("CREATE DATABASE carpe_vegetable")
     """
 
-    object = COMPOUND(filePath)
+    object = Compound(filePath)
 
     if object.fp == None:
         return
