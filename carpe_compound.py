@@ -27,8 +27,15 @@ class Compound:
 
     def __init__(self, filePath):
         if(os.path.exists(filePath)):
-            self.fp = compoundfiles.CompoundFileReader(filePath)
-            print("File exist!!")
+            try:
+                self.fp = compoundfiles.CompoundFileReader(filePath)
+                self.isDamaged = self.CONST_DOCUMENT_NORMAL
+                print("Normal File exist!!")
+            except compoundfiles.errors.CompoundFileInvalidBomError:
+                self.fp = open(filePath, 'rb')
+                self.isDamaged = self.CONST_DOCUMENT_DAMAGED
+                print("Damaged File exist!!")
+
         else:
             self.fp = None
             print("File doesn't exist.")
@@ -40,7 +47,6 @@ class Compound:
         self.text = ""      # extract text
         self.meta = ""      # extract metadata
 
-        self.isDamaged = self.CONST_DOCUMENT_NORMAL
         self.isRestorable = self.CONST_DOCUMENT_UNRESTORABLE
         self.isEncrypted = self.CONST_DOCUMENT_NO_ENCRYPTED
 
@@ -50,30 +56,13 @@ class Compound:
     def __exit__(self):
         raise NotImplementedError
 
-    def parse(self):
-        """
-        if self.fileType == "xls" :
-            result = self.parse_xls()
-        elif self.fileType == "ppt" :
-            result = self.parse_ppt()
-        elif self.fileType == "doc" :
-            result = self.parse_doc()
+    def __parse_xls_damaged__(self):
+        raise NotImplementedError
+    
+    def __parse_xls_normal__(self):
 
-
-        if result == self.CONST_SUCCESS:
-            return self.CONST_SUCCESS
-        elif result == self.CONST_ERROR:
-            return self.CONST_ERROR
-        """
-        self.parse_xls()
-        self.parse_summaryinfo()
-
-
-    def parse_xls(self):
         RECORD_HEADER_SIZE = 4
-
         records = []
-
         # 원하는 스트림 f에 모두 읽어오기
         test = self.fp.open('Workbook').read()
         f = bytearray(test)
@@ -98,8 +87,6 @@ class Compound:
                 sstLen = record['length']
             if record['type'] == 0x3C:
                 f[record['offset']:record['offset']+4] = bytearray(b'\xAA\xAA\xAA\xAA')
-
-
 
 
         cntStream = sstOffset + 4
@@ -234,110 +221,32 @@ class Compound:
 
                     cntStream += 1
 
-
-
-
-
-
-
-
-
+    def parse(self):
         """
-            if fHighByte == 0x01:  ### 유니코드
-                string += f[cntStream: cntStream + cch * 2]
-                cntStream += cch * 2
-            else:  ### 아스키
-                string += f[cntStream: cntStream + cch]
-                cntStream += cch
+        if self.fileType == "xls" :
+            result = self.parse_xls()
+        elif self.fileType == "ppt" :
+            result = self.parse_ppt()
+        elif self.fileType == "doc" :
+            result = self.parse_doc()
 
 
-
-
-            if fRichSt == 0x01:
-                cntStream += int(cRun) * 4
-            if fExtSt == 0x01:
-                cntStream += 16
-
-
-
-            if fHighByte == 0x01:
-                print(str(i) + " " + str(string, "utf-16"))
-            else:
-                print(str(i) + " " + str(string))
-            string += b'\n'
-            # print(dict['string'].decode("utf-8"))
+        if result == self.CONST_SUCCESS:
+            return self.CONST_SUCCESS
+        elif result == self.CONST_ERROR:
+            return self.CONST_ERROR
         """
+        self.parse_xls()
+        #self.parse_summaryinfo()
 
 
-#        for i in range(records[sstNum]['offset'], records[sstNum]['offset'] + records[sstNum]['length']):
-            #print(hex(f[i]))
+    def parse_xls(self):
+
+        if self.isDamaged == self.CONST_DOCUMENT_NORMAL:
+            self.__parse_xls_normal__()
 
 
-        """
-        # 파일에 입력
-        for record in records:
-            # print(record['data'].hex())
 
-            if record['type'] == 0xFC:
-                tempOffset = 0
-                SST_records = []
-                SST = {}
-
-                SST['cstTotal'] = struct.unpack('<i', SSTData[tempOffset: tempOffset + 4])[0]
-                SST['cstUnique'] = struct.unpack('<i', SSTData[tempOffset + 4: tempOffset + 8])[0]
-                tempOffset += 8
-
-                for i in range(0, SST['cstUnique']):
-
-                    dict = {}
-                    dict['cch'] = struct.unpack('<h', SSTData[tempOffset: tempOffset + 2])[0]  ### 문자열 길이
-                    tempOffset += 2
-                    dict['flags'] = SSTData[tempOffset]  ### 플래그를 이용해서 추가적 정보 확인
-                    tempOffset += 1
-
-                    if (dict['flags'] & 0b00000001 == 0b00000001):
-                        dict['fHighByte'] = 0x01
-                    else:
-                        dict['fHighByte'] = 0x00
-
-                    if (dict['flags'] & 0b00000100 == 0b00000100):
-                        dict['fExtSt'] = 0x01
-                    else:
-                        dict['fExtSt'] = 0x00
-
-                    if (dict['flags'] & 0b00001000 == 0b00001000):
-                        dict['fRichSt'] = 0x01
-                    else:
-                        dict['fRichSt'] = 0x00
-
-                    if dict['fRichSt'] == 0x01:
-                        dict['cRun'] = struct.unpack('<h', SSTData[tempOffset: tempOffset + 2])[0]
-                        tempOffset += 2
-
-                    if dict['fExtSt'] == 0x01:
-                        tempOffset += 4
-
-                    if dict['fHighByte'] == 0x01:  ### 유니코드
-                        dict['string'] = SSTData[tempOffset: tempOffset + dict['cch'] * 2]
-                        tempOffset += dict['cch'] * 2
-                    else:  ### 아스키
-                        dict['string'] = SSTData[tempOffset: tempOffset + dict['cch']]
-                        tempOffset += dict['cch']
-
-                    if dict['fRichSt'] == 0x01:
-                        tempOffset += int(dict['cRun']) * 4
-                    if dict['fExtSt'] == 0x01:
-                        tempOffset += 16
-
-
-                    if dict['fHighByte'] == 0x01:
-                        print(str(i) + " " + str(dict['string'], "utf-16"))
-                    else:
-                        print(str(i) + " " + str(dict['string']))
-
-                    # print(dict['string'].decode("utf-8"))
-                    SST_records.append(dict)
-        """
 
     def parse_ppt(self):
         raise NotImplementedError

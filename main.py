@@ -19,6 +19,12 @@ def main(filePath):
     print("fileName : " + str(object.fileName))
     print("fileType : " + str(object.fileType))
     print("filePath : " + str(object.filePath))
+    print("isDamaged : ")
+    if object.isDamaged == object.CONST_DOCUMENT_NORMAL:
+        print("Normal")
+    if object.isDamaged == object.CONST_DOCUMENT_DAMAGED:
+        print("Damaged")
+
 
     object.parse()
 
