@@ -96,8 +96,10 @@ class Compound:
                 sstNum = records.index(record)
                 sstOffset = record['offset']
                 sstLen = record['length']
-            if record['type'] == 0x3C:
-                f[record['offset']:record['offset']+4] = b'\xAA\xAA\xAA\xAA'
+            #if record['type'] == 0x3C:
+            #    f[record['offset']:record['offset']+4] = bytearray(b'\xAA\xAA\xAA\xAA')
+
+
 
 
         cntStream = sstOffset + 4
@@ -108,15 +110,24 @@ class Compound:
 
         for i in range(0, cstUnique):
             string = ""
-            cch = struct.unpack('<h', f[cntStream: cntStream + 2])[0]  ### 문자열 길이
+
+            # if start is Continue
+            if f[cntStream: cntStream + 2] == b'\x3C\x00':
+                cntStream += 4
+
+            cch = struct.unpack('<H', f[cntStream: cntStream + 2])[0]  ### 문자열 길이
             cntStream += 2
             flags = f[cntStream]  ### 플래그를 이용해서 추가적 정보 확인
             cntStream += 1
+
+            if cch == 0x00 and flags == 0x00:
+                continue
 
             if (flags & 0b00000001 == 0b00000001):
                 fHighByte = 0x01
             else:
                 fHighByte = 0x00
+
             if (flags & 0b00000100 == 0b00000100):
                 fExtSt = 0x01
             else:
@@ -127,16 +138,15 @@ class Compound:
                 fRichSt = 0x00
 
             if fRichSt == 0x01:
-                cRun = struct.unpack('<h', f[cntStream: cntStream + 2])[0]
+                cRun = struct.unpack('<H', f[cntStream: cntStream + 2])[0]
                 cntStream += 2
             if fExtSt == 0x01:
                 cntStream += 4
 
             if fHighByte == 0x00:  ### Ascii
+                bAscii = True
                 for j in range(0, cch):
-                    bAscii = True
-
-                    if f[cntStream : cntStream + 4] == b'\xAA\xAA\xAA\xAA':
+                    if f[cntStream : cntStream + 2] == b'\x3C\x00':
                         if f[cntStream + 4] == 0x00 or f[cntStream + 4] == 0x01:
                             cntStream += 4
 
@@ -148,18 +158,26 @@ class Compound:
                             cntStream += 1
 
                     if bAscii == True:
-                        string += str(f[cntStream])
-                        cntStream += 1
+                        try:
+                            string += str(bytes([f[cntStream]]).decode("ascii"))
+                            cntStream += 1
+                        except UnicodeDecodeError:
+                            cntStream += 1
+                            continue
 
                     elif bAscii == False:
-                        string += str(f[cntStream : cntStream + 2].decode("utf-16"))
-                        cntStream += 2
+                        try:
+                            string += str(f[cntStream: cntStream + 2].decode("utf-16"))
+                            cntStream += 2
+                        except UnicodeDecodeError:
+                            cntStream += 2
+                            continue
 
             elif fHighByte == 0x01:  ### Unicode
+                bAscii = False
                 for j in range(0, cch):
-                    bAscii = False
 
-                    if f[cntStream: cntStream + 4] == b'\xAA\xAA\xAA\xAA':
+                    if f[cntStream : cntStream + 2] == b'\x3C\x00':
                         if f[cntStream + 4] == 0x00 or f[cntStream + 4] == 0x01:
                             cntStream += 4
 
@@ -171,14 +189,22 @@ class Compound:
                             cntStream += 1
 
                     if bAscii == True:
-                        string += str(f[cntStream])
-                        cntStream += 1
+                        try :
+                            string += str(bytes([f[cntStream]]).decode("ascii"))
+                            cntStream += 1
+                        except UnicodeDecodeError:
+                            cntStream += 1
+                            continue
 
                     elif bAscii == False:
-                        string += str(f[cntStream : cntStream + 2].decode("utf-16"))
-                        cntStream += 2
+                        try :
+                            string += str(f[cntStream: cntStream + 2].decode("utf-16"))
+                            cntStream += 2
+                        except UnicodeDecodeError:
+                            cntStream += 2
+                            continue
 
-            print(string)
+            print(str(i) + " : " + string)
             if fRichSt == 0x01:
                 cntStream += int(cRun) * 4
             if fExtSt == 0x01:
