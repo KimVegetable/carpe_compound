@@ -100,14 +100,14 @@ class Compound:
                 f[record['offset']:record['offset']+4] = b'\xAA\xAA\xAA\xAA'
 
 
-        cntStream = sstOffset
+        cntStream = sstOffset + 4
         cstTotal = struct.unpack('<i', f[cntStream : cntStream + 4])[0]
         cstUnique = struct.unpack('<i', f[cntStream + 4: cntStream + 8])[0]
         cntStream += 8
 
-        string = b''
-        for i in range(0, cstUnique):
 
+        for i in range(0, cstUnique):
+            string = ""
             cch = struct.unpack('<h', f[cntStream: cntStream + 2])[0]  ### 문자열 길이
             cntStream += 2
             flags = f[cntStream]  ### 플래그를 이용해서 추가적 정보 확인
@@ -148,11 +148,11 @@ class Compound:
                             cntStream += 1
 
                     if bAscii == True:
-                        string += f[cntStream]
+                        string += str(f[cntStream])
                         cntStream += 1
 
                     elif bAscii == False:
-                        string += f[cntStream : cntStream + 2]
+                        string += str(f[cntStream : cntStream + 2].decode("utf-16"))
                         cntStream += 2
 
             elif fHighByte == 0x01:  ### Unicode
@@ -171,14 +171,19 @@ class Compound:
                             cntStream += 1
 
                     if bAscii == True:
-                        string += f[cntStream]
+                        string += str(f[cntStream])
                         cntStream += 1
 
                     elif bAscii == False:
-                        string += f[cntStream: cntStream + 2]
+                        string += str(f[cntStream : cntStream + 2].decode("utf-16"))
                         cntStream += 2
-            string += b'\n'
-        print(string)
+
+            print(string)
+            if fRichSt == 0x01:
+                cntStream += int(cRun) * 4
+            if fExtSt == 0x01:
+                cntStream += 16
+
 
 
 
