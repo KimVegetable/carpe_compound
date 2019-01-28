@@ -56,16 +56,14 @@ class Compound:
     def __exit__(self):
         raise NotImplementedError
 
-    def __parse_xls_damaged__(self):
-        raise NotImplementedError
-    
+
     def __parse_xls_normal__(self):
 
         RECORD_HEADER_SIZE = 4
         records = []
         # 원하는 스트림 f에 모두 읽어오기
-        test = self.fp.open('Workbook').read()
-        f = bytearray(test)
+        temp = self.fp.open('Workbook').read()
+        f = bytearray(temp)
         # 스트림 내부 모두 파싱해서 데이터 출력
         tempOffset = 0
 
@@ -221,6 +219,251 @@ class Compound:
 
                     cntStream += 1
 
+    def __parse_xls_damaged__(self):
+        test = bytearray(self.fp.read())
+        tempOffset = 0
+        globalStreamOffset = 0
+        while tempOffset < len(test):
+            if test[tempOffset:tempOffset+8] == b'\x09\x08\x10\x00\x00\x06\x05\x00':
+                globalStreamOffset = tempOffset
+                break
+            tempOffset += 0x80
+
+        print(globalStreamOffset)
+        f = test[globalStreamOffset:]
+
+        RECORD_HEADER_SIZE = 4
+        records = []
+        # 스트림 내부 모두 파싱해서 데이터 출력
+        tempOffset = 0
+
+        while tempOffset < len(f):
+            dic = {}
+            dic['offset'] = tempOffset
+            dic['type'] = struct.unpack('<h', f[tempOffset: tempOffset + 0x02])[0]
+            if dic['type'] >= 4200 or dic['type'] <= 6:
+                break
+            dic['length'] = struct.unpack('<h', f[tempOffset + 0x02: tempOffset + 0x04])[0]
+            if dic['length'] >= 8225:
+                break
+            dic['data'] = f[tempOffset + RECORD_HEADER_SIZE: tempOffset + RECORD_HEADER_SIZE + dic['length']]
+            tempOffset = tempOffset + RECORD_HEADER_SIZE + dic['length']
+            records.append(dic)
+
+        bSST = False
+        # Continue marker
+        for record in records:
+            if record['type'] == 0xFC:
+                sstOffset = record['offset']
+                bSST = True
+            if record['type'] == 0x3C:
+                f[record['offset']:record['offset']+4] = bytearray(b'\xAA\xAA\xAA\xAA')
+
+        if bSST == False:
+            return self.CONST_ERROR
+
+
+        cntStream = sstOffset + 4
+        cstTotal = struct.unpack('<i', f[cntStream : cntStream + 4])[0]
+        cstUnique = struct.unpack('<i', f[cntStream + 4: cntStream + 8])[0]
+        cntStream += 8
+
+
+        for i in range(0, cstUnique):
+            string = ""
+            if(cntStream > len(f)):
+                break
+            # if start is Continue
+            if f[cntStream: cntStream + 4] == b'\xAA\xAA\xAA\xAA':
+                cntStream += 4
+
+            cch = struct.unpack('<H', f[cntStream: cntStream + 2])[0]  ### 문자열 길이
+            cntStream += 2
+            flags = f[cntStream]  ### 플래그를 이용해서 추가적 정보 확인
+            cntStream += 1
+
+            if cch == 0x00 and flags == 0x00:
+                continue
+
+            if cch == 0x00:
+                break
+
+            if flags & 0x02 or flags >= 0x10:
+                break
+
+
+            if (flags & 0b00000001 == 0b00000001):
+                fHighByte = 0x01
+            else:
+                fHighByte = 0x00
+
+            if (flags & 0b00000100 == 0b00000100):
+                fExtSt = 0x01
+            else:
+                fExtSt = 0x00
+
+            if (flags & 0b00001000 == 0b00001000):
+                fRichSt = 0x01
+            else:
+                fRichSt = 0x00
+
+            if fRichSt == 0x01:
+                cRun = struct.unpack('<H', f[cntStream: cntStream + 2])[0]
+                cntStream += 2
+
+            if fExtSt == 0x01:
+                cbExtRst = struct.unpack('<I', f[cntStream: cntStream + 4])[0]
+                cntStream += 4
+
+            if fHighByte == 0x00:  ### Ascii
+                bAscii = True
+                for j in range(0, cch):
+                    if f[cntStream : cntStream + 4] == b'\xAA\xAA\xAA\xAA':
+                        if f[cntStream + 4] == 0x00 or f[cntStream + 4] == 0x01:
+                            cntStream += 4
+
+                            if f[cntStream] == 0x00:
+                                bAscii = True
+                            elif f[cntStream] == 0x01:
+                                bAscii = False
+
+                            cntStream += 1
+
+                    if bAscii == True:
+                        try:
+                            string += str(bytes([f[cntStream]]).decode("ascii"))
+                            cntStream += 1
+                        except UnicodeDecodeError:
+                            cntStream += 1
+                            continue
+
+                    elif bAscii == False:
+                        try:
+                            string += str(f[cntStream: cntStream + 2].decode("utf-16"))
+                            cntStream += 2
+                        except UnicodeDecodeError:
+                            cntStream += 2
+                            continue
+
+            elif fHighByte == 0x01:  ### Unicode
+                bAscii = False
+                for j in range(0, cch):
+
+                    if f[cntStream : cntStream + 4] == b'\xAA\xAA\xAA\xAA':
+                        if f[cntStream + 4] == 0x00 or f[cntStream + 4] == 0x01:
+                            cntStream += 4
+
+                            if f[cntStream] == 0x00:
+                                bAscii = True
+                            elif f[cntStream] == 0x01:
+                                bAscii = False
+
+                            cntStream += 1
+
+
+                    if bAscii == True:
+                        try :
+                            string += str(bytes([f[cntStream]]).decode("ascii"))
+                            cntStream += 1
+                        except UnicodeDecodeError:
+                            cntStream += 1
+                            continue
+
+                    elif bAscii == False:
+                        try :
+                            string += str(f[cntStream: cntStream + 2].decode("utf-16"))
+                            cntStream += 2
+                        except UnicodeDecodeError:
+                            cntStream += 2
+                            continue
+
+            print(str(i) + " : " + string)
+
+            if fRichSt == 0x01:
+                if f[cntStream: cntStream + 4] == b'\xAA\xAA\xAA\xAA':
+                    cntStream += 4
+                cntStream += int(cRun) * 4
+
+            if fExtSt == 0x01:
+                for i in range(0, cbExtRst):
+                    if cntStream > len(f):
+                        break
+
+                    if f[cntStream: cntStream + 4] == b'\xAA\xAA\xAA\xAA':
+                        if i + 4 <= cbExtRst:
+                            cntStream += 4
+
+                    cntStream += 1
+
+
+    def __parse_doc_normal__(self):
+        word_document = bytearray(self.fp.open('WordDocument').read())  # byteWD
+        one_table = bytearray(self.fp.open('1Table').read())
+        zero_table = bytearray(self.fp.open('0Table').read())
+
+        if len(one_table) == 0 and len(zero_table) == 0:
+            return Compound.CONST_ERROR
+
+        # Extract doc Text
+        ccpText = b''
+        fcClx = b''
+        lcbClx = b''
+        aCP = b''
+        aPcd = b''
+        fcCompressed = b''
+        Clx = b''
+        byteTable = b''
+        ccpTextSize = 0
+        fcClxSize = 0
+        lcbClxSize = 0
+        ClxSize = 0
+        string = ""
+        stopstring = ""
+
+        # Check Encrypted
+        uc_temp = word_document[11]
+        uc_temp = uc_temp & 1
+
+        if uc_temp == 1:
+            return Compound.CONST_ERROR
+
+
+        # 0Table 1Table
+        is0Table = word_document[11] & 2
+
+        if is0Table == 0 :
+            byteTable = zero_table
+        else:
+            byteTable = one_table
+
+
+        # Get cppText in FibRgLw
+        ccpText = word_document[0x4C:0x50]
+
+        string = ccpText[3] + ccpText[2] + ccpText[1] + ccpText[0]
+
+        print(string)
+
+
+
+
+
+
+
+
+
+
+
+    def __parse_doc_damaged__(self):
+        raise NotImplementedError
+
+    def __parse_ppt_normal__(self):
+        raise NotImplementedError
+
+    def __parse_ppt_damaged__(self):
+        raise NotImplementedError
+
+
     def parse(self):
         """
         if self.fileType == "xls" :
@@ -239,12 +482,12 @@ class Compound:
         self.parse_xls()
         #self.parse_summaryinfo()
 
-
     def parse_xls(self):
 
         if self.isDamaged == self.CONST_DOCUMENT_NORMAL:
             self.__parse_xls_normal__()
-
+        elif self.isDamaged == self.CONST_DOCUMENT_DAMAGED:
+            self.__parse_xls_damaged__()
 
 
 
@@ -252,7 +495,11 @@ class Compound:
         raise NotImplementedError
 
     def parse_doc(self):
-        raise NotImplementedError
+        if self.isDamaged == self.CONST_DOCUMENT_NORMAL:
+            self.__parse_doc_normal__()
+        elif self.isDamaged == self.CONST_DOCUMENT_DAMAGED:
+            self.__parse_doc_damaged__()
+
 
     def parse_summaryinfo(self):
         records = []
