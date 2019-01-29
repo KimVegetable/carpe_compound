@@ -398,8 +398,18 @@ class Compound:
 
     def __parse_doc_normal__(self):
         word_document = bytearray(self.fp.open('WordDocument').read())  # byteWD
-        one_table = bytearray(self.fp.open('1Table').read())
-        zero_table = bytearray(self.fp.open('0Table').read())
+        one_table = b''
+        zero_table = b''
+        try :
+            one_table = bytearray(self.fp.open('1Table').read())
+        except compoundfiles.errors.CompoundFileNotFoundError:
+            print("1Table is not exist.")
+
+        try :
+            zero_table = bytearray(self.fp.open('0Table').read())
+        except compoundfiles.errors.CompoundFileNotFoundError:
+            print("0Table is not exist.")
+
 
         if len(one_table) == 0 and len(zero_table) == 0:
             return Compound.CONST_ERROR
@@ -439,10 +449,49 @@ class Compound:
 
         # Get cppText in FibRgLw
         ccpText = word_document[0x4C:0x50]
+        ccpTextSize = struct.unpack('<I', ccpText)[0]
 
-        string = ccpText[3] + ccpText[2] + ccpText[1] + ccpText[0]
+        if (ccpTextSize == 0):
+            return Compound.CONST_ERROR
 
-        print(string)
+
+        # Get fcClx in FibRgFcLcbBlob
+        fcClx = word_document[0x1A2:0x1A6]
+        fcClxSize = struct.unpack('<I', fcClx)[0]
+
+        if (fcClxSize == 0):
+            return Compound.CONST_ERROR
+
+
+        # Get lcbClx in FibRgFcLcbBlob
+        lcbClx = word_document[0x1A6:0x1AA]
+        lcbClxSize = struct.unpack('<I', lcbClx)[0]
+
+        if (lcbClxSize == 0):
+            return Compound.CONST_ERROR
+
+
+        # Get Clx
+        Clx = word_document[fcClxSize : fcClxSize + lcbClxSize]
+
+        if Clx[0] == 0x01:
+            cbGrpprl = Clx[1:3]
+            Clx = word_document[fcClxSize + cbGrpprl + 3 : (fcClxSize + cbGrpprl + 3) + lcbClxSize - cbGrpprl + 3]
+
+        if Clx[0] != 0x02:
+            return Compound.CONST_ERROR
+
+        print(Clx[0])
+        print(Clx[1])
+        print(Clx[2])
+        print(Clx[3])
+
+
+
+
+
+
+
 
 
 
@@ -465,7 +514,7 @@ class Compound:
 
 
     def parse(self):
-        """
+
         if self.fileType == "xls" :
             result = self.parse_xls()
         elif self.fileType == "ppt" :
@@ -473,13 +522,13 @@ class Compound:
         elif self.fileType == "doc" :
             result = self.parse_doc()
 
-
+        """
         if result == self.CONST_SUCCESS:
             return self.CONST_SUCCESS
         elif result == self.CONST_ERROR:
             return self.CONST_ERROR
         """
-        self.parse_xls()
+        #self.parse_xls()
         #self.parse_summaryinfo()
 
     def parse_xls(self):
