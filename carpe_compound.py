@@ -464,7 +464,7 @@ class Compound:
 
 
         # Get lcbClx in FibRgFcLcbBlob
-        lcbClx = word_document[0x1A6:0x1AA]
+        lcbClx = word_document[0x1A6:0x1AA]  
         lcbClxSize = struct.unpack('<I', lcbClx)[0]
 
         if (lcbClxSize == 0):
@@ -472,22 +472,108 @@ class Compound:
 
 
         # Get Clx
-        Clx = word_document[fcClxSize : fcClxSize + lcbClxSize]
+        Clx = byteTable[fcClxSize : fcClxSize + lcbClxSize]
 
         if Clx[0] == 0x01:
             cbGrpprl = Clx[1:3]
-            Clx = word_document[fcClxSize + cbGrpprl + 3 : (fcClxSize + cbGrpprl + 3) + lcbClxSize - cbGrpprl + 3]
-
+            Clx = byteTable[fcClxSize + cbGrpprl + 3 : (fcClxSize + cbGrpprl + 3) + lcbClxSize - cbGrpprl + 3]
         if Clx[0] != 0x02:
             return Compound.CONST_ERROR
 
-        print(Clx[0])
-        print(Clx[1])
-        print(Clx[2])
-        print(Clx[3])
+        ClxSize = struct.unpack('<I', Clx[1:5])[0]
 
 
 
+
+        ClxIndex = 5
+        PcdCount = 0
+        aCPSize = []
+        fcFlag = 0
+        fcIndex = 0
+        fcSize = 0
+        encodingFlag = False
+        
+        PcdCount = ((ClxSize / 4) / 3) + 1
+        
+        for k in range(0, PcdCount):
+            aCp = Clx[ClxIndex:ClxIndex+4]
+            aCPSize.append(struct.unpack('<I', aCp[0:4])[0])
+            ClxIndex += 4
+            
+        PcdCount -= 1
+
+        ### Filtering
+
+         
+        uBlank = 0x0020   # ASCII Blank
+        uBlank2 = 0x00A0   # Unicode Blank
+        uNewline = 0x000A   # Line Feed
+        uNewline2 = 0x000D
+
+        uNewline3 = 0x0004  
+         
+        uNewline4 = 0x0003  
+         
+        uSection = 0x0001  
+         
+        uSection2 = 0x0002  
+         
+        uSection3 = 0x0005  
+         
+        uSection4 = 0x0007  
+         
+        uSection5 = 0x0008  
+         
+        uSection6 = 0x0015  
+         
+        uSection7 = 0x000C  
+         
+        uSection8 = 0x000B  
+         
+        uSection9 = 0x0014  
+         
+        uTrash = 0x0000  
+         
+        uCaption[3] = {0x0053, 0x0045, 0x0051}  
+         
+        uCaption2[8] = {0x0041, 0x0052, 0x0041, 0x0042, 0x0049, 0x0043, 0x0020, 0x0014}  
+         
+        uHyperlink[9] = {0x0048, 0x0059, 0x0050, 0x0045, 0x0052, 0x004C, 0x0049, 0x004E, 0x004B}  
+         
+        uToc[2] = {0x0054, 0x004F}  
+         
+        uPageref[7] = {0x0050, 0x0041, 0x0047, 0x0045, 0x0052, 0x0045, 0x0046}  
+         
+        uIndex[5] = {0x0049, 0x004E, 0x0044, 0x0045, 0x0058}  
+         
+        uEnd[3] = {0x0020, 0x0001, 0x0014}  
+         
+        uEnd2[2] = {0x0020, 0x0014}  
+         
+        uEnd3[2] = {0x0020, 0x0015}  
+         
+        uEnd4 = 0x0014  
+         
+        uEnd5[2] = {0x0001, 0x0014}  
+         
+        uEnd6 = 0x0015  
+         
+        uHeader = 0x0013  
+         
+        uChart[5] = {0x0045, 0x004D, 0x0042, 0x0045, 0x0044}  
+         
+        uShape[5] = {0x0053, 0x0048, 0x0041, 0x0050, 0x0045}  
+         
+        uPage[4] = {0x0050, 0x0041, 0x0047, 0x0045}  
+         
+        uDoc[3] = {0x0044, 0x004F, 0x0043}  
+         
+        uStyleref[8] = {0x0053, 0x0054, 0x0059, 0x004C, 0x0045, 0x0052, 0x0045, 0x0046}  
+         
+        uTitle_text[5] = {0x0054, 0x0049, 0x0054, 0x004C, 0x0045}  
+         
+        uDate[7] = {0x0049, 0x0046, 0x0020, 0x0044, 0x0041, 0x0054, 0x0045}  
+            
 
 
 
