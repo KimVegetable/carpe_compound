@@ -396,6 +396,72 @@ class Compound:
                     cntStream += 1
 
 
+    def __doc_extra_filter__(self, string, uFilteredTextLen):
+        i = 0
+        j = 0
+        k = 0
+
+        # 1.        첫        부분의        공백        문자        모두        제거
+        # 2.        공백        문자가        2        개        이상인        경우에        1        개로        만들자
+        # 3.        개행        문자가        2        개        이상인        경우에        1        개로        만들자
+        # 4.        Filtering
+
+        uBlank = 0x0020   # ASCII Blank
+        uBlank2 = 0x00A0   # Unicode Blank
+        uNewline = 0x000A   # Line Feed
+        uNewline2 = 0x000D
+        uNewline3 = 0x0004
+        uNewline4 = 0x0003
+        uSection = 0x0001
+        uSection2 = 0x0002
+        uSection3 = 0x0005
+        uSection4 = 0x0007
+        uSection5 = 0x0008
+        uSection6 = 0x0015
+        uSection7 = 0x000C
+        uSection8 = 0x000B
+        uSection9 = 0x0014
+        uTrash = 0x0000
+        uCaption = [0x0053, 0x0045, 0x0051]
+        uCaption2 = [0x0041, 0x0052, 0x0041, 0x0042, 0x0049, 0x0043, 0x0020, 0x0014]
+        uHyperlink = [0x0048, 0x0059, 0x0050, 0x0045, 0x0052, 0x004C, 0x0049, 0x004E, 0x004B]
+        uToc = [0x0054, 0x004F]
+        uPageref = [0x0050, 0x0041, 0x0047, 0x0045, 0x0052, 0x0045, 0x0046]
+        uIndex = [0x0049, 0x004E, 0x0044, 0x0045, 0x0058]
+        uEnd = [0x0020, 0x0001, 0x0014]
+        uEnd2 = [0x0020, 0x0014]
+        uEnd3 = [0x0020, 0x0015]
+        uEnd4 = 0x0014
+        uEnd5 = [0x0001, 0x0014]
+        uEnd6 = 0x0015
+        uHeader = 0x0013
+        uChart = [0x0045, 0x004D, 0x0042, 0x0045, 0x0044]
+        uShape = [0x0053, 0x0048, 0x0041, 0x0050, 0x0045]
+        uPage = [0x0050, 0x0041, 0x0047, 0x0045]
+        uDoc = [0x0044, 0x004F, 0x0043]
+        uStyleref = [0x0053, 0x0054, 0x0059, 0x004C, 0x0045, 0x0052, 0x0045, 0x0046]
+        uTitle_text = [0x0054, 0x0049, 0x0054, 0x004C, 0x0045]
+        uDate = [0x0049, 0x0046, 0x0020, 0x0044, 0x0041, 0x0054, 0x0045]
+        FilteredText = string
+
+        for i in range(0, uFilteredTextLen, 2):
+            if i == 0:
+                k = 0
+                temp = struct.unpack('<H', FilteredText[0:2])[0]
+                while (temp == uBlank or temp == uBlank2 or temp == uNewline or temp == uNewline2 or
+                       temp == uNewline3 or temp == uNewline4) :
+
+                    FilteredText = FilteredText[:k] + FilteredText[k+2:]
+                    uFilteredTextLen -= 2
+
+                    if (len(FilteredText) == 0):
+                        break
+
+            if len(FilteredText) == 0:
+                break
+
+        return 0
+
     def __parse_doc_normal__(self):
         word_document = bytearray(self.fp.open('WordDocument').read())  # byteWD
         one_table = b''
@@ -564,7 +630,20 @@ class Compound:
                 encodingFlag = False                # 16-bit Unicode
 
             fcIndex = fcFlag & CONST_FCINDEXFLAG
-            """
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             if encodingFlag == True:                # 8-bit ANSI
                 fcIndex = int(fcIndex / 2)
                 fcSize = aCPSize[i+1] - aCPSize[i]
@@ -582,80 +661,53 @@ class Compound:
                 UNICODEText = ASCIIText.decode('utf-8')
 
                 for i in range(0, len(UNICODEText), 2):
-                    if ( UNICODEText[i:i + 2] == uSection2[0:2] or UNICODEText[i:i + 2] == uSection3[0:2] or
-                         UNICODEText[i:i + 2] == uSection4[0:2] or UNICODEText[i:i + 2] == uSection5[0:2] or
-                         UNICODEText[i:i + 2] == uSection7[0:2] or UNICODEText[i:i + 2] == uSection8[0:2] or
-                         UNICODEText[i + 1] == uSpecial or UNICODEText[i:i + 2] == uTrash[0:2] ):
+                    temp = struct.unpack('<H', UNICODEText[i:i + 2])[0]
+                    if ( temp == uSection2 or temp == uSection3[0:2] or temp == uSection4 or
+                        temp == uSection5 or temp == uSection7 or temp == uSection8 or
+                        UNICODEText[i + 1] == uSpecial or temp == uTrash[0:2] ) :
                         continue
-                    
 
-                    if ( UNICODEText[i:i + 2] == uNewline[0:2]
-                    !memcmp( & UNICODEText[i], & uNewline, 2) | | !memcmp( & UNICODEText[i], & uNewline2, 2) | | !memcmp( & UNICODEText[i], & uNewline3, 2) | | !memcmp( & UNICODEText[i], & uNewline4, 2))
-                    {
-                    arrFilteredText.push_back(UNICODEText[i]);
-                    arrFilteredText.push_back(UNICODEText[i + 1]);
+                    if ( temp == uNewline or temp == uNewline2 or temp == uNewline3 or temp == uNewline4 ):
+                        string += bytes([UNICODEText[i]])
+                        string += bytes([UNICODEText[i + 1]])
 
-                    for (j = i + 2; j < uFilteredTextLen * 2; j = j + 2)
-                        {
-                        if (!memcmp( & UNICODEText[j], & uSection2, 2) | | !memcmp( & UNICODEText[j], & uSection3, 2)
-                        | | !memcmp( & UNICODEText[j], & uSection4, 2) | | !memcmp( & UNICODEText[j], & uSection5, 2)
-                        | | !memcmp( & UNICODEText[j], & uSection7, 2) | | !memcmp( & UNICODEText[j], & uSection8, 2)
-                        | | !memcmp( & UNICODEText[j], & uBlank, 2) | | !memcmp( & UNICODEText[
-                            j], & uBlank2, 2) | | !memcmp( & UNICODEText[j], & uNewline, 2) | | !memcmp( & UNICODEText[
-                            j], & uNewline2, 2)
-                        | | !memcmp( & UNICODEText[j], & uNewline3, 2) | | !memcmp( & UNICODEText[
-                            j], & uNewline4, 2) | | !memcmp( & UNICODEText[j], & uTab, 2)
-                        | | !memcmp( & UNICODEText[j + 1], & uSpecial, 1))
-                        {
-                    continue;
-                    }
-                    else
-                    {
-                    i = j;
-                    break;
-                }
-                }
-                if (j >= uFilteredTextLen * 2)
-                    break;
-        }
-        else if (
-        !memcmp( & UNICODEText[i], & uBlank, 2) | | !memcmp( & UNICODEText[i], & uBlank2, 2) | | !memcmp( & UNICODEText[i], & uTab, 2))
-        {
-        arrFilteredText.push_back(UNICODEText[i]);
-        arrFilteredText.push_back(UNICODEText[i + 1]);
+                        for j in range(i + 2, len(UNICODEText) * 2, 2):
+                            temp = struct.unpack('H', UNICODEText[j:j + 2])[0]
+                            if ( temp == uSection2 or temp == uSection3 or temp == uSection4 or
+                                 temp == uSection5 or temp == uSection7 or temp == uSection8 or
+                                 temp == uBlank or temp == uBlank2 or temp == uNewline or
+                                 temp == uNewline2 or temp == uNewline3 or temp == uNewline4 or
+                                 temp == uTab or UNICODEText[j + 1] == uSpecial ):
+                                continue
+                            else:
+                                i = j
+                                break
+                        if j >= len(UNICODEText) * 2 :
+                            break
+                    elif ( temp == uBlank or temp == uBlank2 or temp == uTab ):
 
-        for (j = i + 2; j < uFilteredTextLen * 2; j = j + 2)
-            {
-            if (!memcmp( & UNICODEText[j], & uSection2, 2) | | !memcmp( & UNICODEText[j], & uSection3, 2)
-            | | !memcmp( & UNICODEText[j], & uSection4, 2) | | !memcmp( & UNICODEText[j], & uSection5, 2)
-            | | !memcmp( & UNICODEText[j], & uSection7, 2) | | !memcmp( & UNICODEText[j], & uSection8, 2)
-            | | !memcmp( & UNICODEText[j], & uBlank, 2) | | !memcmp( & UNICODEText[j], & uBlank2, 2) | | !memcmp( &
-                                                                                                          UNICODEText[
-                                                                                                              j], & uTab, 2)
-            | | !memcmp( & UNICODEText[j + 1], & uSpecial, 1))
-            {
-        continue;
-        }
-        else
-        {
-        i = j;
-        break;
+                        string += bytes([UNICODEText[i]])
+                        string += bytes([UNICODEText[i + 1]])
 
-    }
-    }
-    if (j >= uFilteredTextLen * 2)
-        break;
+                        for j in range(i+2, len(UNICODEText) * 2, 2):
+                            if (temp == uSection2 or temp == uSection3 or temp == uSection4 or
+                                    temp == uSection5 or temp == uSection7 or temp == uSection8 or
+                                    temp == uBlank or temp == uBlank2 or temp == uTab or UNICODEText[j + 1] == uSpecial):
+                                continue
+                            else:
 
-}
-arrFilteredText.push_back(UNICODEText[i]);
-arrFilteredText.push_back(UNICODEText[i + 1]);
-}
+                                i = j;
+                                break;
 
-free(UNICODEText);
-free(ASCIIText);
 
-            """
-            if encodingFlag == False :          ### 16-bit Unicode
+                        if (j >= len(UNICODEText) * 2):
+                            break
+
+                    string += bytes([UNICODEText[i]])
+                    string += bytes([UNICODEText[i + 1]])
+
+
+            elif encodingFlag == False :          ### 16-bit Unicode
                 fcSize = 2 * (aCPSize[i + 1] - aCPSize[i])
 
                 if(len(word_document) < fcIndex + fcSize + 1):   # Invalid structure - size info is invalid (large) => scan from fcIndex to last
@@ -696,76 +748,32 @@ free(ASCIIText);
 
                         if j >= fcSize:
                             break
+
+                    elif temp == uBlank or temp == uBlank2 or temp == uTab :
+                        string += bytes([word_document[fcIndex + i]])
+                        string += bytes([word_document[fcIndex + i + 1]])
+
+                        for j in range(i+2, fcSize, 2):
+                            temp = struct.unpack('<H', word_document[fcIndex + j : fcIndex + j + 2])[0]
+                            if ( temp == uSection2 or temp == uSection3 or temp == uSection4 or
+                                temp == uSection5 or temp == uSection7 or temp == uSection8 or
+                                temp == uBlank or temp == uBlank2 or temp == uTab or word_document[fcIndex + j + 1] == uSpecial ) :
+                                continue
+                            else :
+                                i = j
+                                break
+
+                        if j >= fcSize:
+                            break
+
+
                     string += bytes([word_document[fcIndex + i]])
                     string += bytes([word_document[fcIndex + i + 1]])
 
             ClxIndex += 8
 
-        uFilteredTextLen = __doc_extra_filter__(string, len(string))
+        uFilteredTextLen = self.__doc_extra_filter__(string, len(string))
 
-    def __doc_extra_filter__(self, string, uFilteredTextLen):
-        i = 0
-        j = 0
-        k = 0
-
-        # 1.        첫        부분의        공백        문자        모두        제거
-        # 2.        공백        문자가        2        개        이상인        경우에        1        개로        만들자
-        # 3.        개행        문자가        2        개        이상인        경우에        1        개로        만들자
-        # 4.        Filtering
-
-        uBlank = 0x0020   # ASCII Blank
-        uBlank2 = 0x00A0   # Unicode Blank
-        uNewline = 0x000A   # Line Feed
-        uNewline2 = 0x000D
-        uNewline3 = 0x0004
-        uNewline4 = 0x0003
-        uSection = 0x0001
-        uSection2 = 0x0002
-        uSection3 = 0x0005
-        uSection4 = 0x0007
-        uSection5 = 0x0008
-        uSection6 = 0x0015
-        uSection7 = 0x000C
-        uSection8 = 0x000B
-        uSection9 = 0x0014
-        uTrash = 0x0000
-        uCaption = [0x0053, 0x0045, 0x0051]
-        uCaption2 = [0x0041, 0x0052, 0x0041, 0x0042, 0x0049, 0x0043, 0x0020, 0x0014]
-        uHyperlink = [0x0048, 0x0059, 0x0050, 0x0045, 0x0052, 0x004C, 0x0049, 0x004E, 0x004B]
-        uToc = [0x0054, 0x004F]
-        uPageref = [0x0050, 0x0041, 0x0047, 0x0045, 0x0052, 0x0045, 0x0046]
-        uIndex = [0x0049, 0x004E, 0x0044, 0x0045, 0x0058]
-        uEnd = [0x0020, 0x0001, 0x0014]
-        uEnd2 = [0x0020, 0x0014]
-        uEnd3 = [0x0020, 0x0015]
-        uEnd4 = 0x0014
-        uEnd5 = [0x0001, 0x0014]
-        uEnd6 = 0x0015
-        uHeader = 0x0013
-        uChart = [0x0045, 0x004D, 0x0042, 0x0045, 0x0044]
-        uShape = [0x0053, 0x0048, 0x0041, 0x0050, 0x0045]
-        uPage = [0x0050, 0x0041, 0x0047, 0x0045]
-        uDoc = [0x0044, 0x004F, 0x0043]
-        uStyleref = [0x0053, 0x0054, 0x0059, 0x004C, 0x0045, 0x0052, 0x0045, 0x0046]
-        uTitle_text = [0x0054, 0x0049, 0x0054, 0x004C, 0x0045]
-        uDate = [0x0049, 0x0046, 0x0020, 0x0044, 0x0041, 0x0054, 0x0045]
-        FilteredText = string
-
-        for i in range(0, uFilteredTextLen, 2):
-            if i == 0:
-                k = 0
-                temp = struct.unpack('<H', FilteredText[0:2])[0]
-                while (temp == uBlank or temp == uBlank2 or temp == uNewline or temp == uNewline2 or
-                       temp == uNewline3 or temp == uNewline4) :
-
-                    FilteredText = FilteredText[:k] + FilteredText[k+2:]
-                    uFilteredTextLen -= 2
-
-                    if (len(FilteredText) == 0):
-                        break
-
-            if len(FilteredText) == 0:
-                break
 
 
 
