@@ -498,6 +498,7 @@ class Compound:
         CONST_FCINDEXFLAG = 1073741823	# 0x3FFFFFFF
         i = 0
         j = 0
+        k = 0
 
         # Check Encrypted
         uc_temp = word_document[11]
@@ -564,7 +565,7 @@ class Compound:
         
         PcdCount = int(((ClxSize / 4) / 3)) + 1
         
-        for k in range(0, PcdCount):
+        for i in range(0, PcdCount):
             aCp = Clx[ClxIndex:ClxIndex+4]
             aCPSize.append(struct.unpack('<I', aCp[0:4])[0])
             ClxIndex += 4
@@ -635,7 +636,7 @@ class Compound:
 
 
 
-
+            k = 0
             if encodingFlag == True:                # 8-bit ANSI
                 fcIndex = int(fcIndex / 2)
                 fcSize = aCPSize[i+1] - aCPSize[i]
@@ -652,18 +653,19 @@ class Compound:
                 ASCIIText = word_document[fcIndex:fcIndex + fcSize]
                 UNICODEText = ASCIIText.decode('utf-8')
 
-                for i in range(0, len(UNICODEText), 2):
-                    temp = struct.unpack('<H', UNICODEText[i:i + 2])[0]
+                for k in range(0, len(UNICODEText), 2):
+                    temp = struct.unpack('<H', UNICODEText[k:k + 2])[0]
                     if ( temp == uSection2 or temp == uSection3[0:2] or temp == uSection4 or
                         temp == uSection5 or temp == uSection7 or temp == uSection8 or
-                        UNICODEText[i + 1] == uSpecial or temp == uTrash[0:2] ) :
+                        UNICODEText[k + 1] == uSpecial or temp == uTrash[0:2] ) :
+                        ##k += 2          ### while
                         continue
 
                     if ( temp == uNewline or temp == uNewline2 or temp == uNewline3 or temp == uNewline4 ):
-                        string += bytes([UNICODEText[i]])
-                        string += bytes([UNICODEText[i + 1]])
+                        string += bytes([UNICODEText[k]])
+                        string += bytes([UNICODEText[k + 1]])
 
-                        for j in range(i + 2, len(UNICODEText) * 2, 2):
+                        for j in range(k+ 2, len(UNICODEText) * 2, 2):
                             temp = struct.unpack('H', UNICODEText[j:j + 2])[0]
                             if ( temp == uSection2 or temp == uSection3 or temp == uSection4 or
                                  temp == uSection5 or temp == uSection7 or temp == uSection8 or
@@ -672,31 +674,31 @@ class Compound:
                                  temp == uTab or UNICODEText[j + 1] == uSpecial ):
                                 continue
                             else:
-                                i = j
+                                k = j
                                 break
                         if j >= len(UNICODEText) * 2 :
                             break
                     elif ( temp == uBlank or temp == uBlank2 or temp == uTab ):
 
-                        string += bytes([UNICODEText[i]])
-                        string += bytes([UNICODEText[i + 1]])
+                        string += bytes([UNICODEText[k]])
+                        string += bytes([UNICODEText[k + 1]])
 
-                        for j in range(i+2, len(UNICODEText) * 2, 2):
+                        for j in range(k+2, len(UNICODEText) * 2, 2):
                             if (temp == uSection2 or temp == uSection3 or temp == uSection4 or
                                     temp == uSection5 or temp == uSection7 or temp == uSection8 or
                                     temp == uBlank or temp == uBlank2 or temp == uTab or UNICODEText[j + 1] == uSpecial):
                                 continue
                             else:
 
-                                i = j
+                                k = j
                                 break
 
 
                         if (j >= len(UNICODEText) * 2):
                             break
 
-                    string += bytes([UNICODEText[i]])
-                    string += bytes([UNICODEText[i + 1]])
+                    string += bytes([UNICODEText[k]])
+                    string += bytes([UNICODEText[k + 1]])
 
 
             elif encodingFlag == False :          ### 16-bit Unicode
@@ -710,24 +712,26 @@ class Compound:
                         ClxIndex = ClxIndex + 8
                         continue
 
-                while i < fcSize:
-                    temp = struct.unpack('<H', word_document[fcIndex + i : fcIndex + i + 2])[0]
+                while k < fcSize:
+                    temp = struct.unpack('<H', word_document[fcIndex + k : fcIndex + k + 2])[0]
                     if ( temp == uSection2 or temp == uSection3 or
                         temp == uSection4 or temp == uSection5 or
                         temp == uSection7 or temp == uSection8 or
-                         word_document[fcIndex + i + 1] == uSpecial or temp == uTrash ):
+                         word_document[fcIndex + k + 1] == uSpecial or temp == uTrash ):
+                        k += 2
                         continue
 
                     if ( temp == uNewline or temp == uNewline2 or temp == uNewline3 or temp == uNewline4 ):
 
-                        if ( word_document[fcIndex + i] == 0x0d ):
+                        if ( word_document[fcIndex + k] == 0x0d ):
                             string += b'\x0a'
-                            string += bytes([word_document[fcIndex + i + 1]])
+                            string += bytes([word_document[fcIndex + k + 1]])
                         else :
-                            string += bytes([word_document[fcIndex + i]])
-                            string += bytes([word_document[fcIndex + i + 1]])
+                            string += bytes([word_document[fcIndex + k]])
+                            string += bytes([word_document[fcIndex + k + 1]])
 
-                        for j in range(i+2, fcSize, 2):
+
+                        for j in range(k+2, fcSize, 2):
                             temp2 = struct.unpack('<H', word_document[fcIndex + j : fcIndex + j + 2])[0]
                             if ( temp2 == uSection2 or temp2 == uSection3 or temp2 == uSection4 or
                                 temp2 == uSection5 or temp2 == uSection7 or temp2 == uSection8 or
@@ -735,40 +739,45 @@ class Compound:
                                 temp2 == uNewline3 or temp2 == uNewline4 or temp2 == uTab or word_document[fcIndex + j + 1] == uSpecial ) :
                                 continue
                             else :
-                                i = j
+                                k = j
                                 break
 
-                        if j >= fcSize:
+                        if j + 2 >= fcSize:
                             break
 
                     elif temp == uBlank or temp == uBlank2 or temp == uTab :
-                        string += bytes([word_document[fcIndex + i]])
-                        string += bytes([word_document[fcIndex + i + 1]])
+                        string += bytes([word_document[fcIndex + k]])
+                        string += bytes([word_document[fcIndex + k + 1]])
 
-                        for j in range(i+2, fcSize, 2):
+                        j = k + 2
+                        for j in range(k+2, fcSize, 2):
                             temp2 = struct.unpack('<H', word_document[fcIndex + j : fcIndex + j + 2])[0]
                             if ( temp2 == uSection2 or temp2 == uSection3 or temp2 == uSection4 or
                                 temp2 == uSection5 or temp2 == uSection7 or temp2 == uSection8 or
                                 temp2 == uBlank or temp2 == uBlank2 or temp2 == uTab or word_document[fcIndex + j + 1] == uSpecial ) :
                                 continue
                             else :
-                                i = j
+                                k = j
                                 break
 
-                        if j >= fcSize:
+                        if j + 2 >= fcSize:
                             break
 
 
-                    string += bytes([word_document[fcIndex + i]])
-                    string += bytes([word_document[fcIndex + i + 1]])
-                    i += 2
-                    print("while", i)
+                    string += bytes([word_document[fcIndex + k]])
+                    string += bytes([word_document[fcIndex + k + 1]])
+                    k += 2
+                    print("while", k, fcSize)
 
             ClxIndex += 8
 
         # Test
         print("test end")
-
+        """
+        fp = open("/home/horensic/Desktop/testfile", 'wb')
+        fp.write(string)
+        fp.close()
+        """
         uFilteredTextLen = self.__doc_extra_filter__(string, len(string))
 
 
