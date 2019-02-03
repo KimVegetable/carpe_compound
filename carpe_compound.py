@@ -616,7 +616,7 @@ class Compound:
         uSpecial = 0xF0
         bFullScanA = False
         bFullScanU = False # if the size info is invalid, then the entire range will be scanned.
-
+        tempPlus = 0
 
         for i in range(0, PcdCount):
             aPcd = Clx[ClxIndex:ClxIndex + 8]
@@ -630,14 +630,6 @@ class Compound:
                 encodingFlag = False                # 16-bit Unicode
 
             fcIndex = fcFlag & CONST_FCINDEXFLAG
-
-
-
-
-
-
-
-
 
 
 
@@ -696,8 +688,8 @@ class Compound:
                                 continue
                             else:
 
-                                i = j;
-                                break;
+                                i = j
+                                break
 
 
                         if (j >= len(UNICODEText) * 2):
@@ -718,7 +710,7 @@ class Compound:
                         ClxIndex = ClxIndex + 8
                         continue
 
-                for i in range(0, fcSize, 2):
+                while i < fcSize:
                     temp = struct.unpack('<H', word_document[fcIndex + i : fcIndex + i + 2])[0]
                     if ( temp == uSection2 or temp == uSection3 or
                         temp == uSection4 or temp == uSection5 or
@@ -736,11 +728,11 @@ class Compound:
                             string += bytes([word_document[fcIndex + i + 1]])
 
                         for j in range(i+2, fcSize, 2):
-                            temp = struct.unpack('<H', word_document[fcIndex + j : fcIndex + j + 2])[0]
-                            if ( temp == uSection2 or temp == uSection3 or temp == uSection4 or
-                                temp == uSection5 or temp == uSection7 or temp == uSection8 or
-                                temp == uBlank or temp == uBlank2 or temp == uNewline or temp == uNewline2 or
-                                temp == uNewline3 or temp == uNewline4 or temp == uTab or word_document[fcIndex + j + 1] == uSpecial ) :
+                            temp2 = struct.unpack('<H', word_document[fcIndex + j : fcIndex + j + 2])[0]
+                            if ( temp2 == uSection2 or temp2 == uSection3 or temp2 == uSection4 or
+                                temp2 == uSection5 or temp2 == uSection7 or temp2 == uSection8 or
+                                temp2 == uBlank or temp2 == uBlank2 or temp2 == uNewline or temp2 == uNewline2 or
+                                temp2 == uNewline3 or temp2 == uNewline4 or temp2 == uTab or word_document[fcIndex + j + 1] == uSpecial ) :
                                 continue
                             else :
                                 i = j
@@ -754,10 +746,10 @@ class Compound:
                         string += bytes([word_document[fcIndex + i + 1]])
 
                         for j in range(i+2, fcSize, 2):
-                            temp = struct.unpack('<H', word_document[fcIndex + j : fcIndex + j + 2])[0]
-                            if ( temp == uSection2 or temp == uSection3 or temp == uSection4 or
-                                temp == uSection5 or temp == uSection7 or temp == uSection8 or
-                                temp == uBlank or temp == uBlank2 or temp == uTab or word_document[fcIndex + j + 1] == uSpecial ) :
+                            temp2 = struct.unpack('<H', word_document[fcIndex + j : fcIndex + j + 2])[0]
+                            if ( temp2 == uSection2 or temp2 == uSection3 or temp2 == uSection4 or
+                                temp2 == uSection5 or temp2 == uSection7 or temp2 == uSection8 or
+                                temp2 == uBlank or temp2 == uBlank2 or temp2 == uTab or word_document[fcIndex + j + 1] == uSpecial ) :
                                 continue
                             else :
                                 i = j
@@ -769,8 +761,13 @@ class Compound:
 
                     string += bytes([word_document[fcIndex + i]])
                     string += bytes([word_document[fcIndex + i + 1]])
+                    i += 2
+                    print("while", i)
 
             ClxIndex += 8
+
+        # Test
+        print("test end")
 
         uFilteredTextLen = self.__doc_extra_filter__(string, len(string))
 
