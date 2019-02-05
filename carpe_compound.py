@@ -718,6 +718,7 @@ class Compound:
                         temp == uSection4 or temp == uSection5 or
                         temp == uSection7 or temp == uSection8 or
                          word_document[fcIndex + k + 1] == uSpecial or temp == uTrash ):
+
                         k += 2
                         continue
 
@@ -730,7 +731,21 @@ class Compound:
                             string += bytes([word_document[fcIndex + k]])
                             string += bytes([word_document[fcIndex + k + 1]])
 
+                        j = k + 2
+                        while j < fcSize :
+                            temp2 = struct.unpack('<H', word_document[fcIndex + j: fcIndex + j + 2])[0]
+                            if (temp2 == uSection2 or temp2 == uSection3 or temp2 == uSection4 or
+                                    temp2 == uSection5 or temp2 == uSection7 or temp2 == uSection8 or
+                                    temp2 == uBlank or temp2 == uBlank2 or temp2 == uNewline or temp2 == uNewline2 or
+                                    temp2 == uNewline3 or temp2 == uNewline4 or temp2 == uTab or word_document[
+                                        fcIndex + j + 1] == uSpecial):
+                                j += 2
+                                continue
+                            else:
+                                k = j
+                                break
 
+                        """
                         for j in range(k+2, fcSize, 2):
                             temp2 = struct.unpack('<H', word_document[fcIndex + j : fcIndex + j + 2])[0]
                             if ( temp2 == uSection2 or temp2 == uSection3 or temp2 == uSection4 or
@@ -741,8 +756,9 @@ class Compound:
                             else :
                                 k = j
                                 break
+                        """
 
-                        if j + 2 >= fcSize:
+                        if j >= fcSize:
                             break
 
                     elif temp == uBlank or temp == uBlank2 or temp == uTab :
@@ -750,6 +766,17 @@ class Compound:
                         string += bytes([word_document[fcIndex + k + 1]])
 
                         j = k + 2
+                        while j < fcSize :
+                            temp2 = struct.unpack('<H', word_document[fcIndex + j: fcIndex + j + 2])[0]
+                            if ( temp2 == uSection2 or temp2 == uSection3 or temp2 == uSection4 or
+                                temp2 == uSection5 or temp2 == uSection7 or temp2 == uSection8 or
+                                temp2 == uBlank or temp2 == uBlank2 or temp2 == uTab or word_document[fcIndex + j + 1] == uSpecial ) :
+                                j += 2
+                                continue
+                            else :
+                                k = j
+                                break
+                        """        
                         for j in range(k+2, fcSize, 2):
                             temp2 = struct.unpack('<H', word_document[fcIndex + j : fcIndex + j + 2])[0]
                             if ( temp2 == uSection2 or temp2 == uSection3 or temp2 == uSection4 or
@@ -759,8 +786,9 @@ class Compound:
                             else :
                                 k = j
                                 break
+                        """
 
-                        if j + 2 >= fcSize:
+                        if j >= fcSize:
                             break
 
 
