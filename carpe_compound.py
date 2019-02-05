@@ -400,67 +400,137 @@ class Compound:
         i = 0
         j = 0
         k = 0
-
+        textLen = uFilteredTextLen
         # 1.        첫        부분의        공백        문자        모두        제거
         # 2.        공백        문자가        2        개        이상인        경우에        1        개로        만들자
         # 3.        개행        문자가        2        개        이상인        경우에        1        개로        만들자
         # 4.        Filtering
 
-        uBlank = 0x0020   # ASCII Blank
-        uBlank2 = 0x00A0   # Unicode Blank
-        uNewline = 0x000A   # Line Feed
-        uNewline2 = 0x000D
-        uNewline3 = 0x0004
-        uNewline4 = 0x0003
-        uSection = 0x0001
-        uSection2 = 0x0002
-        uSection3 = 0x0005
-        uSection4 = 0x0007
-        uSection5 = 0x0008
-        uSection6 = 0x0015
-        uSection7 = 0x000C
-        uSection8 = 0x000B
-        uSection9 = 0x0014
-        uTrash = 0x0000
-        uCaption = [0x0053, 0x0045, 0x0051]
-        uCaption2 = [0x0041, 0x0052, 0x0041, 0x0042, 0x0049, 0x0043, 0x0020, 0x0014]
-        uHyperlink = [0x0048, 0x0059, 0x0050, 0x0045, 0x0052, 0x004C, 0x0049, 0x004E, 0x004B]
-        uToc = [0x0054, 0x004F]
-        uPageref = [0x0050, 0x0041, 0x0047, 0x0045, 0x0052, 0x0045, 0x0046]
-        uIndex = [0x0049, 0x004E, 0x0044, 0x0045, 0x0058]
-        uEnd = [0x0020, 0x0001, 0x0014]
-        uEnd2 = [0x0020, 0x0014]
-        uEnd3 = [0x0020, 0x0015]
-        uEnd4 = 0x0014
-        uEnd5 = [0x0001, 0x0014]
-        uEnd6 = 0x0015
-        uHeader = 0x0013
-        uChart = [0x0045, 0x004D, 0x0042, 0x0045, 0x0044]
-        uShape = [0x0053, 0x0048, 0x0041, 0x0050, 0x0045]
-        uPage = [0x0050, 0x0041, 0x0047, 0x0045]
-        uDoc = [0x0044, 0x004F, 0x0043]
-        uStyleref = [0x0053, 0x0054, 0x0059, 0x004C, 0x0045, 0x0052, 0x0045, 0x0046]
-        uTitle_text = [0x0054, 0x0049, 0x0054, 0x004C, 0x0045]
-        uDate = [0x0049, 0x0046, 0x0020, 0x0044, 0x0041, 0x0054, 0x0045]
-        FilteredText = string
-
-        for i in range(0, uFilteredTextLen, 2):
+        uBlank = b'\x20\x00'   # ASCII Blank
+        uBlank2 = b'\xA0\x00'   # Unicode Blank
+        uNewline = b'\x0A\x00'   # Line Feed
+        uNewline2 = b'\x0D\x00'
+        uNewline3 = b'\x04\x00'
+        uNewline4 = b'\x03\x00'
+        uSection = b'\x01\x00'
+        uSection2 = b'\x02\x00'
+        uSection3 = b'\x05\x00'
+        uSection4 = b'\x07\x00'
+        uSection5 = b'\x08\x00'
+        uSection6 = b'\x15\x00'
+        uSection7 = b'\x0C\x00'
+        uSection8 = b'\x0B\x00'
+        uSection9 = b'\x14\x00'
+        uTrash = b'\x00\x00'
+        uCaption = b'\x53\x00\x45\x00\x51\x00'
+        uCaption2 = b'\x41\x00\x52\x00\x41\x00\x43\x00\x49\x00\x43\x00\x20\x00\x14\x00'
+        uHyperlink = b'\x48\x00\x59\x00\x50\x00\x45\x00\x52\x00\x4C\x00\x49\x00\x4E\x00\x4B\x00'
+        uToc = b'\x54\x00\x4F\x00'
+        uPageref = b'\x50\x00\x41\x00\x47\x00\x45\x00\x52\x00\x45\x00\x46\x00'
+        uIndex = b'\x49\x00\x4E\x00\x44\x00\x45\x00\x58\x00'
+        uEnd = b'\x20\x00\x01\x00\x14\x00'
+        uEnd2 = b'\x20\x00\x14\x00'
+        uEnd3 = b'\x20\x00\x15\x00'
+        uEnd4 = b'\x14\x00'
+        uEnd5 = b'\x01\x00\x14\x00'
+        uEnd6 = b'\x15\x00'
+        uHeader = b'\x13\x00'
+        uChart = b'\x45\x00\x4D\x00\x42\x00\x45\x00\x44\x00'
+        uShape = b'\x53\x00\x48\x00\x41\x00\x50\x00\x45\x00'
+        uPage = b'\x50\x00\x41\x00\x47\x00\x45\x00'
+        uDoc = b'\x44\x00\x4F\x00\x43\x00'
+        uStyleref = b'\x53\x00\x54\x00\x59\x00\x4C\x00\x45\x00\x52\x00\x45\x00\x46\x00'
+        uTitle = b'\x54\x00\x49\x00\x54\x00\x4C\x00\x45\x00'
+        uDate = b'\x49\x00\x46\x00\x20\x00\x44\x00\x41\x00\x54\x00\x45\x00'
+        filteredText = string
+        print("start")
+        while i < textLen :
+            print("i = ", i)
             if i == 0:
                 k = 0
-                temp = struct.unpack('<H', FilteredText[0:2])[0]
-                while (temp == uBlank or temp == uBlank2 or temp == uNewline or temp == uNewline2 or
-                       temp == uNewline3 or temp == uNewline4) :
 
-                    FilteredText = FilteredText[:k] + FilteredText[k+2:]
-                    uFilteredTextLen -= 2
+                while (filteredText[0:2] == uBlank or filteredText[0:2] == uBlank2 or filteredText[0:2] == uNewline or filteredText[0:2] == uNewline2 or
+                       filteredText[0:2] == uNewline3 or filteredText[0:2] == uNewline4) :
+                    filteredText = filteredText[:k] + filteredText[k + 2:]
+                    textLen -= 2
 
-                    if (len(FilteredText) == 0):
+                    if (len(filteredText) == 0):
                         break
 
-            if len(FilteredText) == 0:
+            if len(filteredText) == 0:
                 break
 
-        return 0
+
+            if (len(filteredText) >= 2 + i) and filteredText[i : i + 2] == uHeader:
+                filteredText = filteredText[:i] + filteredText[i + 2:]
+                textLen -= 2
+
+                if (len(filteredText) >= 2 + i) and filteredText[i : i + 2] == uBlank:
+                    filteredText = filteredText[:i] + filteredText[i + 2:]
+                    textLen -= 2
+
+                charSize = 0
+                temp = True
+                j = i
+
+                if (len(filteredText) >= 16 + i) and (filteredText[i : i + 6] == uCaption or filteredText[i: i + 18] == uHyperlink or
+                filteredText[i: i + 4] == uToc or filteredText[i: i + 14] == uPageref or filteredText[i: i + 10] == uIndex or
+                filteredText[i: i + 10] == uChart or filteredText[i: i + 10] == uShape or filteredText[i: i + 8] == uPage or
+                filteredText[i: i + 6] == uDoc or filteredText[i: i + 16] == uStyleref or filteredText[i: i + 10] == uTitle or filteredText[i: i + 14] == uDate) :
+                    pass
+                else:
+                    temp = False
+
+                while temp == True:
+                    if (len(filteredText) >= 6 + j) and (filteredText[j : j + 6] == uEnd) :
+                        charSize += 6
+                        j += 6
+                        break
+
+                    elif (len(filteredText) >= 4 + j) and (filteredText[j : j + 4] == uEnd2 or filteredText[j : j + 4] == uEnd3) :
+                        charSize += 4
+                        j += 4
+                        break
+                    elif (len(filteredText) >= 2 + j) and (filteredText[j : j + 2] == uEnd4) :
+                        charSize += 2
+                        j += 2
+                        break
+
+                    charSize += 2
+                    j += 2
+
+                    if (len(filteredText) < 6 + j) :
+                        temp = False
+                        break
+
+                if temp == True:
+                    filteredText = filteredText[:i] + filteredText[i+charSize:]
+                    textLen -= charSize
+
+                i -= 2
+                continue
+
+            if (len(filteredText) >= 2 + i) and (
+                    filteredText[i : i + 2] == uSection or filteredText[i : i + 2] == uSection6 or
+                    filteredText[i : i + 2] == uSection9 ) :
+                filteredText = filteredText[:i] + filteredText[i + 2:]
+                textLen -= 2
+
+                i -= 2
+                continue
+
+            if (len(filteredText) >= 4 + i) and ( filteredText[i: i + 4] == uHeader ):
+                filteredText = filteredText[:i] + filteredText[i + 4:]
+                textLen -= 4
+
+                i -= 4
+                continue
+
+            i += 2
+        dict = {}
+        dict['string'] = filteredText
+        dict['length'] = textLen
+        return dict
 
     def __parse_doc_normal__(self):
         word_document = bytearray(self.fp.open('WordDocument').read())  # byteWD
@@ -745,19 +815,6 @@ class Compound:
                                 k = j
                                 break
 
-                        """
-                        for j in range(k+2, fcSize, 2):
-                            temp2 = struct.unpack('<H', word_document[fcIndex + j : fcIndex + j + 2])[0]
-                            if ( temp2 == uSection2 or temp2 == uSection3 or temp2 == uSection4 or
-                                temp2 == uSection5 or temp2 == uSection7 or temp2 == uSection8 or
-                                temp2 == uBlank or temp2 == uBlank2 or temp2 == uNewline or temp2 == uNewline2 or
-                                temp2 == uNewline3 or temp2 == uNewline4 or temp2 == uTab or word_document[fcIndex + j + 1] == uSpecial ) :
-                                continue
-                            else :
-                                k = j
-                                break
-                        """
-
                         if j >= fcSize:
                             break
 
@@ -776,17 +833,6 @@ class Compound:
                             else :
                                 k = j
                                 break
-                        """        
-                        for j in range(k+2, fcSize, 2):
-                            temp2 = struct.unpack('<H', word_document[fcIndex + j : fcIndex + j + 2])[0]
-                            if ( temp2 == uSection2 or temp2 == uSection3 or temp2 == uSection4 or
-                                temp2 == uSection5 or temp2 == uSection7 or temp2 == uSection8 or
-                                temp2 == uBlank or temp2 == uBlank2 or temp2 == uTab or word_document[fcIndex + j + 1] == uSpecial ) :
-                                continue
-                            else :
-                                k = j
-                                break
-                        """
 
                         if j >= fcSize:
                             break
@@ -795,18 +841,18 @@ class Compound:
                     string += bytes([word_document[fcIndex + k]])
                     string += bytes([word_document[fcIndex + k + 1]])
                     k += 2
-                    print("while", k, fcSize)
+
 
             ClxIndex += 8
 
-        # Test
-        print("test end")
-        """
-        fp = open("/home/horensic/Desktop/testfile", 'wb')
-        fp.write(string)
-        fp.close()
-        """
-        uFilteredTextLen = self.__doc_extra_filter__(string, len(string))
+
+        dictionary = self.__doc_extra_filter__(string, len(string))
+
+        filteredText = dictionary['string']
+        filteredLen = dictionary['length']
+
+        print(filteredText.decode('utf-16'))
+
 
 
 
