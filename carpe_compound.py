@@ -401,8 +401,8 @@ class Compound:
         j = 0
         k = 0
         textLen = uFilteredTextLen
-        # 1.        첫        부분의        공백        문자        모두        제거
-        # 2.        공백        문자가        2        개        이상인        경우에        1        개로        만들자
+        # 1. 첫 부분의        공백        문자        모두        제거
+        # 2. 공백        문자가        2        개        이상인        경우에        1        개로        만들자
         # 3.        개행        문자가        2        개        이상인        경우에        1        개로        만들자
         # 4.        Filtering
 
@@ -443,12 +443,9 @@ class Compound:
         uTitle = b'\x54\x00\x49\x00\x54\x00\x4C\x00\x45\x00'
         uDate = b'\x49\x00\x46\x00\x20\x00\x44\x00\x41\x00\x54\x00\x45\x00'
         filteredText = string
-        print("start")
         while i < textLen :
-            print("i = ", i)
             if i == 0:
                 k = 0
-
                 while (filteredText[0:2] == uBlank or filteredText[0:2] == uBlank2 or filteredText[0:2] == uNewline or filteredText[0:2] == uNewline2 or
                        filteredText[0:2] == uNewline3 or filteredText[0:2] == uNewline4) :
                     filteredText = filteredText[:k] + filteredText[k + 2:]
@@ -644,43 +641,44 @@ class Compound:
 
         ### Filtering
 
-         
-        uBlank = 0x0020   # ASCII Blank
-        uBlank2 = 0x00A0   # Unicode Blank
-        uNewline = 0x000A   # Line Feed
-        uNewline2 = 0x000D
-        uNewline3 = 0x0004
-        uNewline4 = 0x0003
-        uSection = 0x0001
-        uSection2 = 0x0002
-        uSection3 = 0x0005
-        uSection4 = 0x0007
-        uSection5 = 0x0008
-        uSection6 = 0x0015
-        uSection7 = 0x000C
-        uSection8 = 0x000B
-        uSection9 = 0x0014
-        uTrash = 0x0000
-        uCaption = [0x0053, 0x0045, 0x0051]
-        uCaption2 = [0x0041, 0x0052, 0x0041, 0x0042, 0x0049, 0x0043, 0x0020, 0x0014]
-        uHyperlink = [0x0048, 0x0059, 0x0050, 0x0045, 0x0052, 0x004C, 0x0049, 0x004E, 0x004B]
-        uToc = [0x0054, 0x004F]
-        uPageref = [0x0050, 0x0041, 0x0047, 0x0045, 0x0052, 0x0045, 0x0046]
-        uIndex = [0x0049, 0x004E, 0x0044, 0x0045, 0x0058]
-        uEnd = [0x0020, 0x0001, 0x0014]
-        uEnd2 = [0x0020, 0x0014]
-        uEnd3 = [0x0020, 0x0015]
-        uEnd4 = 0x0014
-        uEnd5 = [0x0001, 0x0014]
-        uEnd6 = 0x0015
-        uHeader = 0x0013
-        uChart = [0x0045, 0x004D, 0x0042, 0x0045, 0x0044]
-        uShape = [0x0053, 0x0048, 0x0041, 0x0050, 0x0045]
-        uPage = [0x0050, 0x0041, 0x0047, 0x0045]
-        uDoc = [0x0044, 0x004F, 0x0043]
-        uStyleref = [0x0053, 0x0054, 0x0059, 0x004C, 0x0045, 0x0052, 0x0045, 0x0046]
-        uTitle_text = [0x0054, 0x0049, 0x0054, 0x004C, 0x0045]
-        uDate = [0x0049, 0x0046, 0x0020, 0x0044, 0x0041, 0x0054, 0x0045]
+
+
+        uBlank = b'\x20\x00'   # ASCII Blank
+        uBlank2 = b'\xA0\x00'   # Unicode Blank
+        uNewline = b'\x0A\x00'   # Line Feed
+        uNewline2 = b'\x0D\x00'
+        uNewline3 = b'\x04\x00'
+        uNewline4 = b'\x03\x00'
+        uSection = b'\x01\x00'
+        uSection2 = b'\x02\x00'
+        uSection3 = b'\x05\x00'
+        uSection4 = b'\x07\x00'
+        uSection5 = b'\x08\x00'
+        uSection6 = b'\x15\x00'
+        uSection7 = b'\x0C\x00'
+        uSection8 = b'\x0B\x00'
+        uSection9 = b'\x14\x00'
+        uTrash = b'\x00\x00'
+        uCaption = b'\x53\x00\x45\x00\x51\x00'
+        uCaption2 = b'\x41\x00\x52\x00\x41\x00\x43\x00\x49\x00\x43\x00\x20\x00\x14\x00'
+        uHyperlink = b'\x48\x00\x59\x00\x50\x00\x45\x00\x52\x00\x4C\x00\x49\x00\x4E\x00\x4B\x00'
+        uToc = b'\x54\x00\x4F\x00'
+        uPageref = b'\x50\x00\x41\x00\x47\x00\x45\x00\x52\x00\x45\x00\x46\x00'
+        uIndex = b'\x49\x00\x4E\x00\x44\x00\x45\x00\x58\x00'
+        uEnd = b'\x20\x00\x01\x00\x14\x00'
+        uEnd2 = b'\x20\x00\x14\x00'
+        uEnd3 = b'\x20\x00\x15\x00'
+        uEnd4 = b'\x14\x00'
+        uEnd5 = b'\x01\x00\x14\x00'
+        uEnd6 = b'\x15\x00'
+        uHeader = b'\x13\x00'
+        uChart = b'\x45\x00\x4D\x00\x42\x00\x45\x00\x44\x00'
+        uShape = b'\x53\x00\x48\x00\x41\x00\x50\x00\x45\x00'
+        uPage = b'\x50\x00\x41\x00\x47\x00\x45\x00'
+        uDoc = b'\x44\x00\x4F\x00\x43\x00'
+        uStyleref = b'\x53\x00\x54\x00\x59\x00\x4C\x00\x45\x00\x52\x00\x45\x00\x46\x00'
+        uTitle = b'\x54\x00\x49\x00\x54\x00\x4C\x00\x45\x00'
+        uDate = b'\x49\x00\x46\x00\x20\x00\x44\x00\x41\x00\x54\x00\x45\x00'
 
         ### Filtering targets: 0x0001 ~ 0x0017(0x000A Line Feed skipped)
         uTab = 0x0009 # Horizontal Tab
@@ -703,9 +701,6 @@ class Compound:
             fcIndex = fcFlag & CONST_FCINDEXFLAG
 
 
-
-
-
             k = 0
             if encodingFlag == True:                # 8-bit ANSI
                 fcIndex = int(fcIndex / 2)
@@ -721,54 +716,66 @@ class Compound:
 
 
                 ASCIIText = word_document[fcIndex:fcIndex + fcSize]
-                UNICODEText = ASCIIText.decode('utf-8')
+                UNICODEText = b''
 
-                for k in range(0, len(UNICODEText), 2):
-                    temp = struct.unpack('<H', UNICODEText[k:k + 2])[0]
-                    if ( temp == uSection2 or temp == uSection3[0:2] or temp == uSection4 or
-                        temp == uSection5 or temp == uSection7 or temp == uSection8 or
-                        UNICODEText[k + 1] == uSpecial or temp == uTrash[0:2] ) :
-                        ##k += 2          ### while
+                for i in range(0, len(ASCIIText)):
+                    UNICODEText += bytes([ASCIIText[i]])
+                    UNICODEText += b'\x00'
+
+
+                while k < len(UNICODEText):
+
+                    if ( UNICODEText[k : k + 2] == uSection2 or UNICODEText[k : k + 2] == uSection3 or UNICODEText[k : k + 2] == uSection4 or
+                        UNICODEText[k: k + 2] == uSection5 or UNICODEText[k : k + 2] == uSection7 or UNICODEText[k : k + 2] == uSection8 or
+                        UNICODEText[k + 1] == uSpecial or UNICODEText[k : k + 2] == uTrash ) :
+                        k += 2          ### while
                         continue
 
-                    if ( temp == uNewline or temp == uNewline2 or temp == uNewline3 or temp == uNewline4 ):
+                    if ( UNICODEText[k : k + 2] == uNewline or UNICODEText[k : k + 2] == uNewline2 or UNICODEText[k : k + 2] == uNewline3 or UNICODEText[k : k + 2] == uNewline4 ):
                         string += bytes([UNICODEText[k]])
                         string += bytes([UNICODEText[k + 1]])
 
-                        for j in range(k+ 2, len(UNICODEText) * 2, 2):
-                            temp = struct.unpack('H', UNICODEText[j:j + 2])[0]
-                            if ( temp == uSection2 or temp == uSection3 or temp == uSection4 or
-                                 temp == uSection5 or temp == uSection7 or temp == uSection8 or
-                                 temp == uBlank or temp == uBlank2 or temp == uNewline or
-                                 temp == uNewline2 or temp == uNewline3 or temp == uNewline4 or
-                                 temp == uTab or UNICODEText[j + 1] == uSpecial ):
+                        j = k + 2
+                        while j < len(UNICODEText):
+                            if ( UNICODEText[j:j + 2] == uSection2 or UNICODEText[j:j + 2] == uSection3 or UNICODEText[j:j + 2] == uSection4 or
+                                UNICODEText[j:j + 2] == uSection5 or UNICODEText[j:j + 2] == uSection7 or UNICODEText[j:j + 2] == uSection8 or
+                                UNICODEText[j:j + 2] == uBlank or UNICODEText[j:j + 2] == uBlank2 or UNICODEText[j:j + 2] == uNewline or
+                                UNICODEText[j:j + 2] == uNewline2 or UNICODEText[j:j + 2] == uNewline3 or UNICODEText[j:j + 2] == uNewline4 or
+                                UNICODEText[j:j + 2] == uTab or UNICODEText[j + 1] == uSpecial ):
+                                j += 2
                                 continue
                             else:
                                 k = j
                                 break
-                        if j >= len(UNICODEText) * 2 :
+
+                        if j >= len(UNICODEText) :
                             break
-                    elif ( temp == uBlank or temp == uBlank2 or temp == uTab ):
+
+                    elif ( UNICODEText[k:k + 2] == uBlank or UNICODEText[k:k + 2] == uBlank2 or UNICODEText[k:k + 2] == uTab ):
 
                         string += bytes([UNICODEText[k]])
                         string += bytes([UNICODEText[k + 1]])
 
-                        for j in range(k+2, len(UNICODEText) * 2, 2):
-                            if (temp == uSection2 or temp == uSection3 or temp == uSection4 or
-                                    temp == uSection5 or temp == uSection7 or temp == uSection8 or
-                                    temp == uBlank or temp == uBlank2 or temp == uTab or UNICODEText[j + 1] == uSpecial):
+                        j = k + 2
+                        while j < len(UNICODEText):
+                            if (UNICODEText[j:j + 2] == uSection2 or UNICODEText[j:j + 2] == uSection3 or UNICODEText[j:j + 2] == uSection4 or
+                                    UNICODEText[j:j + 2] == uSection5 or UNICODEText[j:j + 2] == uSection7 or UNICODEText[j:j + 2] == uSection8 or
+                                    UNICODEText[j:j + 2] == uBlank or UNICODEText[j:j + 2] == uBlank2 or UNICODEText[j:j + 2] == uTab or UNICODEText[j + 1] == uSpecial):
+                                j += 2
                                 continue
                             else:
-
                                 k = j
                                 break
 
 
-                        if (j >= len(UNICODEText) * 2):
+                        if (j >= len(UNICODEText)):
                             break
 
                     string += bytes([UNICODEText[k]])
                     string += bytes([UNICODEText[k + 1]])
+                    k += 2
+
+
 
 
             elif encodingFlag == False :          ### 16-bit Unicode
@@ -783,16 +790,16 @@ class Compound:
                         continue
 
                 while k < fcSize:
-                    temp = struct.unpack('<H', word_document[fcIndex + k : fcIndex + k + 2])[0]
-                    if ( temp == uSection2 or temp == uSection3 or
-                        temp == uSection4 or temp == uSection5 or
-                        temp == uSection7 or temp == uSection8 or
-                         word_document[fcIndex + k + 1] == uSpecial or temp == uTrash ):
+                    if ( word_document[fcIndex + k : fcIndex + k + 2] == uSection2 or word_document[fcIndex + k : fcIndex + k + 2] == uSection3 or
+                            word_document[fcIndex + k: fcIndex + k + 2] == uSection4 or word_document[fcIndex + k : fcIndex + k + 2] == uSection5 or
+                            word_document[fcIndex + k: fcIndex + k + 2] == uSection7 or word_document[fcIndex + k : fcIndex + k + 2] == uSection8 or
+                         word_document[fcIndex + k + 1] == uSpecial or word_document[fcIndex + k : fcIndex + k + 2] == uTrash ):
 
                         k += 2
                         continue
 
-                    if ( temp == uNewline or temp == uNewline2 or temp == uNewline3 or temp == uNewline4 ):
+                    if ( word_document[fcIndex + k : fcIndex + k + 2] == uNewline or word_document[fcIndex + k : fcIndex + k + 2] == uNewline2 or
+                            word_document[fcIndex + k : fcIndex + k + 2] == uNewline3 or word_document[fcIndex + k : fcIndex + k + 2] == uNewline4 ):
 
                         if ( word_document[fcIndex + k] == 0x0d ):
                             string += b'\x0a'
@@ -803,11 +810,10 @@ class Compound:
 
                         j = k + 2
                         while j < fcSize :
-                            temp2 = struct.unpack('<H', word_document[fcIndex + j: fcIndex + j + 2])[0]
-                            if (temp2 == uSection2 or temp2 == uSection3 or temp2 == uSection4 or
-                                    temp2 == uSection5 or temp2 == uSection7 or temp2 == uSection8 or
-                                    temp2 == uBlank or temp2 == uBlank2 or temp2 == uNewline or temp2 == uNewline2 or
-                                    temp2 == uNewline3 or temp2 == uNewline4 or temp2 == uTab or word_document[
+                            if (word_document[fcIndex + j: fcIndex + j + 2] == uSection2 or word_document[fcIndex + j: fcIndex + j + 2] == uSection3 or word_document[fcIndex + j: fcIndex + j + 2] == uSection4 or
+                                    word_document[fcIndex + j: fcIndex + j + 2] == uSection5 or word_document[fcIndex + j: fcIndex + j + 2] == uSection7 or word_document[fcIndex + j: fcIndex + j + 2] == uSection8 or
+                                    word_document[fcIndex + j: fcIndex + j + 2] == uBlank or word_document[fcIndex + j: fcIndex + j + 2] == uBlank2 or word_document[fcIndex + j: fcIndex + j + 2] == uNewline or word_document[fcIndex + j: fcIndex + j + 2] == uNewline2 or
+                                    word_document[fcIndex + j: fcIndex + j + 2] == uNewline3 or word_document[fcIndex + j: fcIndex + j + 2] == uNewline4 or word_document[fcIndex + j: fcIndex + j + 2] == uTab or word_document[
                                         fcIndex + j + 1] == uSpecial):
                                 j += 2
                                 continue
@@ -818,16 +824,15 @@ class Compound:
                         if j >= fcSize:
                             break
 
-                    elif temp == uBlank or temp == uBlank2 or temp == uTab :
+                    elif word_document[fcIndex + k: fcIndex + k + 2] == uBlank or word_document[fcIndex + k: fcIndex + k + 2] == uBlank2 or word_document[fcIndex + k: fcIndex + k + 2] == uTab :
                         string += bytes([word_document[fcIndex + k]])
                         string += bytes([word_document[fcIndex + k + 1]])
 
                         j = k + 2
                         while j < fcSize :
-                            temp2 = struct.unpack('<H', word_document[fcIndex + j: fcIndex + j + 2])[0]
-                            if ( temp2 == uSection2 or temp2 == uSection3 or temp2 == uSection4 or
-                                temp2 == uSection5 or temp2 == uSection7 or temp2 == uSection8 or
-                                temp2 == uBlank or temp2 == uBlank2 or temp2 == uTab or word_document[fcIndex + j + 1] == uSpecial ) :
+                            if ( word_document[fcIndex + j: fcIndex + j + 2] == uSection2 or word_document[fcIndex + j: fcIndex + j + 2] == uSection3 or word_document[fcIndex + j: fcIndex + j + 2] == uSection4 or
+                                    word_document[fcIndex + j: fcIndex + j + 2] == uSection5 or word_document[fcIndex + j: fcIndex + j + 2] == uSection7 or word_document[fcIndex + j: fcIndex + j + 2] == uSection8 or
+                                    word_document[fcIndex + j: fcIndex + j + 2] == uBlank or word_document[fcIndex + j: fcIndex + j + 2] == uBlank2 or word_document[fcIndex + j: fcIndex + j + 2] == uTab or word_document[fcIndex + j + 1] == uSpecial ) :
                                 j += 2
                                 continue
                             else :
@@ -837,11 +842,9 @@ class Compound:
                         if j >= fcSize:
                             break
 
-
                     string += bytes([word_document[fcIndex + k]])
                     string += bytes([word_document[fcIndex + k + 1]])
                     k += 2
-
 
             ClxIndex += 8
 
@@ -850,15 +853,13 @@ class Compound:
 
         filteredText = dictionary['string']
         filteredLen = dictionary['length']
-
-        print(filteredText.decode('utf-16'))
-
-
-
-
-
-
-
+        """
+        fp = open('/home/horensic/Desktop/tempfile', 'wb')
+        fp.write(filteredText)
+        fp.close()
+        """
+        print(filteredText[58:64].decode("utf-16"))
+        print(len(filteredText))
 
 
 
