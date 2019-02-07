@@ -681,8 +681,8 @@ class Compound:
         uDate = b'\x49\x00\x46\x00\x20\x00\x44\x00\x41\x00\x54\x00\x45\x00'
 
         ### Filtering targets: 0x0001 ~ 0x0017(0x000A Line Feed skipped)
-        uTab = 0x0009 # Horizontal Tab
-        uSpecial = 0xF0
+        uTab = b'\x09\x00' # Horizontal Tab
+        uSpecial = b'\xF0'
         bFullScanA = False
         bFullScanU = False # if the size info is invalid, then the entire range will be scanned.
         tempPlus = 0
@@ -726,7 +726,7 @@ class Compound:
                 while k < len(UNICODEText):
 
                     if ( UNICODEText[k : k + 2] == uSection2 or UNICODEText[k : k + 2] == uSection3 or UNICODEText[k : k + 2] == uSection4 or
-                        UNICODEText[k: k + 2] == uSection5 or UNICODEText[k : k + 2] == uSection7 or UNICODEText[k : k + 2] == uSection8 or
+                            UNICODEText[k: k + 2] == uSection5 or UNICODEText[k : k + 2] == uSection7 or UNICODEText[k : k + 2] == uSection8 or
                         UNICODEText[k + 1] == uSpecial or UNICODEText[k : k + 2] == uTrash ) :
                         k += 2          ### while
                         continue
@@ -853,12 +853,12 @@ class Compound:
 
         filteredText = dictionary['string']
         filteredLen = dictionary['length']
-        """
+
         fp = open('/home/horensic/Desktop/tempfile', 'wb')
         fp.write(filteredText)
         fp.close()
-        """
-        print(filteredText[58:64].decode("utf-16"))
+
+        print(filteredText.decode("utf-16"))            ## finished
         print(len(filteredText))
 
 
