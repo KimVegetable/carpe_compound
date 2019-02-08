@@ -1283,7 +1283,7 @@ class Compound:
 
         RT_CurrentUserAtom = b'\xF6\x0F'
         RT_UserEditAtom	= b'\xF5\x0F'
-        RT_PersistPtrIncrementalAtom = b'\x72\x17
+        RT_PersistPtrIncrementalAtom = b'\x72\x17'
 
         RT_Document = b'\xE8\x03'
         RT_MainMaster = b'\xF8\x03'
