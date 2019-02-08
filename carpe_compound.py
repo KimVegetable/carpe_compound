@@ -4,6 +4,7 @@ import datetime
 import compoundfiles
 import os
 import struct
+import chardet
 
 class Compound:
 
@@ -35,6 +36,10 @@ class Compound:
                 self.fp = open(filePath, 'rb')
                 self.isDamaged = self.CONST_DOCUMENT_DAMAGED
                 print("Damaged File exist!!")
+            except UnicodeDecodeError:
+                self.fp = open(filePath, 'rb')
+                self.isDamaged = self.CONST_DOCUMENT_DAMAGED
+                print("Damaged File exist!! [else]")
 
         else:
             self.fp = None
@@ -863,11 +868,467 @@ class Compound:
 
 
 
+    """
     def __parse_doc_damaged__(self):
+        file = bytearray(self.fp.read())
+        m_word = b''
+        m_table = b''
+        wordFlag = False
+        tableFlag = False
+        word_document = b''
+        one_table = b''
+        zero_table = b''
+
+        string = b''
+        CONST_FCFLAG = 1073741824		# 0x40000000
+        CONST_FCINDEXFLAG = 1073741823	# 0x3FFFFFFF
+
+        CONST_TABLE1_WORD = b'\x57\x00\x6F\x00\x72\x00\x64\x00\x44\x00\x6F\x00'
+        CONST_TABLE2_1TABLE = b'\x31\x00\x54\x00\x61\x00\x62\x00\x6C\x00\x65\x00'
+        CONST_DATA_SIGNATURE = b'\xEC\xA5'
+        nCurPos = 0
+
+        while(nCurPos < len(file)):
+            if(file[nCurPos : nCurPos + 12] == CONST_TABLE1_WORD):
+                m_table = file[nCurPos : nCurPos + 0x80]
+                tableFlag = True
+
+            if (file[nCurPos: nCurPos + 12] == CONST_TABLE2_1TABLE):
+                m_word = file[nCurPos: nCurPos + 0x80]
+                wordFlag = True
+
+            if (tableFlag == True and wordFlag == True):
+                break
+
+            nCurPos += 0x80
+
+
+        # word
+        if (file[0x200:0x202] == CONST_DATA_SIGNATURE):
+            if wordFlag == True:
+                wordStartIndex = struct.unpack('<I', m_word[0x74:0x78])[0]
+                wordSize = struct.unpack('<I', m_word[0x78:0x7C])[0]
+
+                if wordSize < len(file) - 0x202:
+                    word_document = file[(wordStartIndex + 1) * 0x200 : (wordStartIndex + 1) * 0x200 + wordSize]
+
+            else:
+                word_document = file[0x200:]
+
+        #table
+        if tableFlag == True:
+            tableStartIndex = struct.unpack('<I', m_table[0x74:0x78])[0]
+            tableSize = struct.unpack('<I', m_table[0x78:0x7C])[0]
+            byteTable = file[(tableStartIndex + 1) * 0x200 : (tableStartIndex + 1) * 0x200 + tableSize]
+
+
+
+        # Get cppText in FibRgLw
+        ccpText = word_document[0x4C:0x50]
+        ccpTextSize = struct.unpack('<I', ccpText)[0]
+
+        if (ccpTextSize == 0):
+            return Compound.CONST_ERROR
+
+        # Get fcClx in FibRgFcLcbBlob
+        fcClx = word_document[0x1A2:0x1A6]
+        fcClxSize = struct.unpack('<I', fcClx)[0]
+
+        if (fcClxSize == 0):
+            return Compound.CONST_ERROR
+
+        # Get lcbClx in FibRgFcLcbBlob
+        lcbClx = word_document[0x1A6:0x1AA]
+        lcbClxSize = struct.unpack('<I', lcbClx)[0]
+
+        if (lcbClxSize == 0):
+            return Compound.CONST_ERROR
+
+        # Get Clx
+        Clx = byteTable[fcClxSize: fcClxSize + lcbClxSize]
+
+        if Clx[0] == 0x01:
+            cbGrpprl = Clx[1:3]
+            Clx = byteTable[fcClxSize + cbGrpprl + 3: (fcClxSize + cbGrpprl + 3) + lcbClxSize - cbGrpprl + 3]
+        if Clx[0] != 0x02:
+            return Compound.CONST_ERROR
+
+        ClxSize = struct.unpack('<I', Clx[1:5])[0]
+
+        ClxIndex = 5
+        PcdCount = 0
+        aCPSize = []
+        fcFlag = 0
+        fcIndex = 0
+        fcSize = 0
+        encodingFlag = False
+
+        PcdCount = int(((ClxSize / 4) / 3)) + 1
+
+        for i in range(0, PcdCount):
+            aCp = Clx[ClxIndex:ClxIndex + 4]
+            aCPSize.append(struct.unpack('<I', aCp[0:4])[0])
+            ClxIndex += 4
+
+        PcdCount -= 1
+
+        ### Filtering
+
+        uBlank = b'\x20\x00'  # ASCII Blank
+        uBlank2 = b'\xA0\x00'  # Unicode Blank
+        uNewline = b'\x0A\x00'  # Line Feed
+        uNewline2 = b'\x0D\x00'
+        uNewline3 = b'\x04\x00'
+        uNewline4 = b'\x03\x00'
+        uSection = b'\x01\x00'
+        uSection2 = b'\x02\x00'
+        uSection3 = b'\x05\x00'
+        uSection4 = b'\x07\x00'
+        uSection5 = b'\x08\x00'
+        uSection6 = b'\x15\x00'
+        uSection7 = b'\x0C\x00'
+        uSection8 = b'\x0B\x00'
+        uSection9 = b'\x14\x00'
+        uTrash = b'\x00\x00'
+        uCaption = b'\x53\x00\x45\x00\x51\x00'
+        uCaption2 = b'\x41\x00\x52\x00\x41\x00\x43\x00\x49\x00\x43\x00\x20\x00\x14\x00'
+        uHyperlink = b'\x48\x00\x59\x00\x50\x00\x45\x00\x52\x00\x4C\x00\x49\x00\x4E\x00\x4B\x00'
+        uToc = b'\x54\x00\x4F\x00'
+        uPageref = b'\x50\x00\x41\x00\x47\x00\x45\x00\x52\x00\x45\x00\x46\x00'
+        uIndex = b'\x49\x00\x4E\x00\x44\x00\x45\x00\x58\x00'
+        uEnd = b'\x20\x00\x01\x00\x14\x00'
+        uEnd2 = b'\x20\x00\x14\x00'
+        uEnd3 = b'\x20\x00\x15\x00'
+        uEnd4 = b'\x14\x00'
+        uEnd5 = b'\x01\x00\x14\x00'
+        uEnd6 = b'\x15\x00'
+        uHeader = b'\x13\x00'
+        uChart = b'\x45\x00\x4D\x00\x42\x00\x45\x00\x44\x00'
+        uShape = b'\x53\x00\x48\x00\x41\x00\x50\x00\x45\x00'
+        uPage = b'\x50\x00\x41\x00\x47\x00\x45\x00'
+        uDoc = b'\x44\x00\x4F\x00\x43\x00'
+        uStyleref = b'\x53\x00\x54\x00\x59\x00\x4C\x00\x45\x00\x52\x00\x45\x00\x46\x00'
+        uTitle = b'\x54\x00\x49\x00\x54\x00\x4C\x00\x45\x00'
+        uDate = b'\x49\x00\x46\x00\x20\x00\x44\x00\x41\x00\x54\x00\x45\x00'
+
+        ### Filtering targets: 0x0001 ~ 0x0017(0x000A Line Feed skipped)
+        uTab = b'\x09\x00'  # Horizontal Tab
+        uSpecial = b'\xF0'
+        bFullScanA = False
+        bFullScanU = False  # if the size info is invalid, then the entire range will be scanned.
+        tempPlus = 0
+
+        for i in range(0, PcdCount):
+            aPcd = Clx[ClxIndex:ClxIndex + 8]
+            fcCompressed = aPcd[2:6]
+
+            fcFlag = struct.unpack('<I', fcCompressed[0:4])[0]
+
+            if CONST_FCFLAG == (fcFlag & CONST_FCFLAG):
+                encodingFlag = True  # 8-bit ANSI
+            else:
+                encodingFlag = False  # 16-bit Unicode
+
+            fcIndex = fcFlag & CONST_FCINDEXFLAG
+
+            k = 0
+            if encodingFlag == True:  # 8-bit ANSI
+                fcIndex = int(fcIndex / 2)
+                fcSize = aCPSize[i + 1] - aCPSize[i]
+
+                if len(word_document) < fcIndex + fcSize + 1:
+                    if bFullScanA == False and len(word_document) > fcIndex:
+                        fcSize = len(word_document) - fcIndex - 1
+                        bFullScanA = True
+                    else:
+                        ClxIndex += 8
+                        continue
+
+                ASCIIText = word_document[fcIndex:fcIndex + fcSize]
+                UNICODEText = b''
+
+                for i in range(0, len(ASCIIText)):
+                    UNICODEText += bytes([ASCIIText[i]])
+                    UNICODEText += b'\x00'
+
+                while k < len(UNICODEText):
+
+                    if (UNICODEText[k: k + 2] == uSection2 or UNICODEText[k: k + 2] == uSection3 or UNICODEText[
+                                                                                                    k: k + 2] == uSection4 or
+                            UNICODEText[k: k + 2] == uSection5 or UNICODEText[k: k + 2] == uSection7 or UNICODEText[
+                                                                                                        k: k + 2] == uSection8 or
+                            UNICODEText[k + 1] == uSpecial or UNICODEText[k: k + 2] == uTrash):
+                        k += 2  ### while
+                        continue
+
+                    if (UNICODEText[k: k + 2] == uNewline or UNICODEText[k: k + 2] == uNewline2 or UNICODEText[
+                                                                                                   k: k + 2] == uNewline3 or UNICODEText[
+                                                                                                                             k: k + 2] == uNewline4):
+                        string += bytes([UNICODEText[k]])
+                        string += bytes([UNICODEText[k + 1]])
+
+                        j = k + 2
+                        while j < len(UNICODEText):
+                            if (UNICODEText[j:j + 2] == uSection2 or UNICODEText[j:j + 2] == uSection3 or UNICODEText[
+                                                                                                          j:j + 2] == uSection4 or
+                                    UNICODEText[j:j + 2] == uSection5 or UNICODEText[
+                                                                         j:j + 2] == uSection7 or UNICODEText[
+                                                                                                  j:j + 2] == uSection8 or
+                                    UNICODEText[j:j + 2] == uBlank or UNICODEText[j:j + 2] == uBlank2 or UNICODEText[
+                                                                                                         j:j + 2] == uNewline or
+                                    UNICODEText[j:j + 2] == uNewline2 or UNICODEText[
+                                                                         j:j + 2] == uNewline3 or UNICODEText[
+                                                                                                  j:j + 2] == uNewline4 or
+                                    UNICODEText[j:j + 2] == uTab or UNICODEText[j + 1] == uSpecial):
+                                j += 2
+                                continue
+                            else:
+                                k = j
+                                break
+
+                        if j >= len(UNICODEText):
+                            break
+
+                    elif (UNICODEText[k:k + 2] == uBlank or UNICODEText[k:k + 2] == uBlank2 or UNICODEText[
+                                                                                               k:k + 2] == uTab):
+
+                        string += bytes([UNICODEText[k]])
+                        string += bytes([UNICODEText[k + 1]])
+
+                        j = k + 2
+                        while j < len(UNICODEText):
+                            if (UNICODEText[j:j + 2] == uSection2 or UNICODEText[j:j + 2] == uSection3 or UNICODEText[
+                                                                                                          j:j + 2] == uSection4 or
+                                    UNICODEText[j:j + 2] == uSection5 or UNICODEText[
+                                                                         j:j + 2] == uSection7 or UNICODEText[
+                                                                                                  j:j + 2] == uSection8 or
+                                    UNICODEText[j:j + 2] == uBlank or UNICODEText[j:j + 2] == uBlank2 or UNICODEText[
+                                                                                                         j:j + 2] == uTab or
+                                    UNICODEText[j + 1] == uSpecial):
+                                j += 2
+                                continue
+                            else:
+                                k = j
+                                break
+
+                        if (j >= len(UNICODEText)):
+                            break
+
+                    string += bytes([UNICODEText[k]])
+                    string += bytes([UNICODEText[k + 1]])
+                    k += 2
+
+
+
+
+            elif encodingFlag == False:  ### 16-bit Unicode
+                fcSize = 2 * (aCPSize[i + 1] - aCPSize[i])
+
+                if (len(
+                        word_document) < fcIndex + fcSize + 1):  # Invalid structure - size info is invalid (large) => scan from fcIndex to last
+                    if (bFullScanU == False and len(word_document) > fcIndex):
+                        fcSize = len(word_document) - fcIndex - 1
+                        bFullScanU = True
+                    else:
+                        ClxIndex = ClxIndex + 8
+                        continue
+
+                while k < fcSize:
+                    if (word_document[fcIndex + k: fcIndex + k + 2] == uSection2 or word_document[
+                                                                                    fcIndex + k: fcIndex + k + 2] == uSection3 or
+                            word_document[fcIndex + k: fcIndex + k + 2] == uSection4 or word_document[
+                                                                                        fcIndex + k: fcIndex + k + 2] == uSection5 or
+                            word_document[fcIndex + k: fcIndex + k + 2] == uSection7 or word_document[
+                                                                                        fcIndex + k: fcIndex + k + 2] == uSection8 or
+                            word_document[fcIndex + k + 1] == uSpecial or word_document[
+                                                                          fcIndex + k: fcIndex + k + 2] == uTrash):
+                        k += 2
+                        continue
+
+                    if (word_document[fcIndex + k: fcIndex + k + 2] == uNewline or word_document[
+                                                                                   fcIndex + k: fcIndex + k + 2] == uNewline2 or
+                            word_document[fcIndex + k: fcIndex + k + 2] == uNewline3 or word_document[
+                                                                                        fcIndex + k: fcIndex + k + 2] == uNewline4):
+
+                        if (word_document[fcIndex + k] == 0x0d):
+                            string += b'\x0a'
+                            string += bytes([word_document[fcIndex + k + 1]])
+                        else:
+                            string += bytes([word_document[fcIndex + k]])
+                            string += bytes([word_document[fcIndex + k + 1]])
+
+                        j = k + 2
+                        while j < fcSize:
+                            if (word_document[fcIndex + j: fcIndex + j + 2] == uSection2 or word_document[
+                                                                                            fcIndex + j: fcIndex + j + 2] == uSection3 or word_document[
+                                                                                                                                          fcIndex + j: fcIndex + j + 2] == uSection4 or
+                                    word_document[fcIndex + j: fcIndex + j + 2] == uSection5 or word_document[
+                                                                                                fcIndex + j: fcIndex + j + 2] == uSection7 or word_document[
+                                                                                                                                              fcIndex + j: fcIndex + j + 2] == uSection8 or
+                                    word_document[fcIndex + j: fcIndex + j + 2] == uBlank or word_document[
+                                                                                             fcIndex + j: fcIndex + j + 2] == uBlank2 or word_document[
+                                                                                                                                         fcIndex + j: fcIndex + j + 2] == uNewline or word_document[
+                                                                                                                                                                                      fcIndex + j: fcIndex + j + 2] == uNewline2 or
+                                    word_document[fcIndex + j: fcIndex + j + 2] == uNewline3 or word_document[
+                                                                                                fcIndex + j: fcIndex + j + 2] == uNewline4 or word_document[
+                                                                                                                                              fcIndex + j: fcIndex + j + 2] == uTab or
+                                    word_document[
+                                        fcIndex + j + 1] == uSpecial):
+                                j += 2
+                                continue
+                            else:
+                                k = j
+                                break
+
+                        if j >= fcSize:
+                            break
+
+                    elif word_document[fcIndex + k: fcIndex + k + 2] == uBlank or word_document[
+                                                                                  fcIndex + k: fcIndex + k + 2] == uBlank2 or word_document[
+                                                                                                                              fcIndex + k: fcIndex + k + 2] == uTab:
+                        string += bytes([word_document[fcIndex + k]])
+                        string += bytes([word_document[fcIndex + k + 1]])
+
+                        j = k + 2
+                        while j < fcSize:
+                            if (word_document[fcIndex + j: fcIndex + j + 2] == uSection2 or word_document[
+                                                                                            fcIndex + j: fcIndex + j + 2] == uSection3 or word_document[
+                                                                                                                                          fcIndex + j: fcIndex + j + 2] == uSection4 or
+                                    word_document[fcIndex + j: fcIndex + j + 2] == uSection5 or word_document[
+                                                                                                fcIndex + j: fcIndex + j + 2] == uSection7 or word_document[
+                                                                                                                                              fcIndex + j: fcIndex + j + 2] == uSection8 or
+                                    word_document[fcIndex + j: fcIndex + j + 2] == uBlank or word_document[
+                                                                                             fcIndex + j: fcIndex + j + 2] == uBlank2 or word_document[
+                                                                                                                                         fcIndex + j: fcIndex + j + 2] == uTab or
+                                    word_document[fcIndex + j + 1] == uSpecial):
+                                j += 2
+                                continue
+                            else:
+                                k = j
+                                break
+
+                        if j >= fcSize:
+                            break
+
+                    string += bytes([word_document[fcIndex + k]])
+                    string += bytes([word_document[fcIndex + k + 1]])
+                    k += 2
+
+            ClxIndex += 8
+
+        dictionary = self.__doc_extra_filter__(string, len(string))
+
+        filteredText = dictionary['string']
+        filteredLen = dictionary['length']
+        
+        fp = open('/home/horensic/Desktop/tempfile', 'wb')
+        fp.write(filteredText)
+        fp.close()
+        
+        print(filteredText.decode("utf-16"))  ## finished
+        print(len(filteredText))
+    """
+    def __parse_doc_damaged__(self):
+        pass
+        """
+        file = bytearray(self.fp.read())
+        offset = 0
+        wordStartOffset = 0
+        bWord = False
+        while len(file) > offset:
+            if file[offset:offset + 2] == b'\xEC\xA5':
+                wordStartOffset = offset
+                bWord = True
+                break
+            offset += 0x80
+
+        bFinish = False
+        string = ""
+        offset = wordStartOffset + 0x200
+        while len(file) > offset:
+            if file[offset : offset + 2] == b'\x00\x00' or file[offset + 2: offset + 4] == b'\x00\x00':
+                offset += 0x200
+                continue
+
+
+            encoding = chardet.detect(file[offset : offset + 0x100])
+            if encoding['encoding'] != None :
+                if encoding['encoding'] == 'ascii' or encoding['encoding'] == 'Windows-1252':
+                    string += file[offset: offset + 0x200].decode('windows-1252')
+                else:
+                    for i in range(0, 0x200, 2):
+                        string += file[offset + i : offset + i + 2].decode('utf-16')
+
+
+            offset += 0x200
+
+        test = open('/home/horensic/Desktop/extract.txt', 'w')
+        test.write(string)
+        test.close()
+        """
+
+
+
+    def __ppt_get_user_edit_offset__(self):
+        raise NotImplementedError
+
+    def __ppt_set_chain__(self):
+        raise NotImplementedError
+
+    def __ppt_extract_text__(self):
         raise NotImplementedError
 
     def __parse_ppt_normal__(self):
-        raise NotImplementedError
+        # ppt 97????????????????
+
+        RT_CurrentUserAtom = b'\xF6\x0F'
+        RT_UserEditAtom	= b'\xF5\x0F'
+        RT_PersistPtrIncrementalAtom = b'\x72\x17
+
+        RT_Document = b'\xE8\x03'
+        RT_MainMaster = b'\xF8\x03'
+        RT_Slide = b'\xEE\x03'
+        RT_Notes						0x03F0	// 1008	[C]
+        RT_NotesAtom					0x03F1	// 1009
+
+        RT_SlideListWithText			0x0FF0	// 4080
+        RT_SlidePersistAtom				0x03F3	// 1011
+        RT_TextHeader					0x0F9F	// 3999
+        RT_TextBytesAtom				0x0FA8	// 4008		// ASCII
+        RT_TextCharsAtom				0x0FA0	// 4000		// UNICODE
+        RT_StyleTextPropAtom			0x0FA1	// 4001
+        RT_TextSpecInfoAtom				0x0FAA	// 4010
+
+        RT_SlideAtom					0x03EF	// 1007
+        RT_PPDrawing					0x040C	// 1036
+        RT_EscherClientTextbox			0xF00D	//		 [C]
+
+        # define RT_Slide							0x03EE	// 1006	 [C]
+        RT_ProgTags						0x1388	// 5000	 [C]
+        RT_BinaryTagDataBlob		0x138B	// 5003	 [A]
+        RT_Comment10			0x2EE0	// 12000 [C]
+        RT_CString			0x0FBA	// 4026	 [A]	// UNICODE
+        # define RT_CString		0x0FBA	// 4026	 [A]	// UNICODE
+        # define RT_Comment10			0x2EE0	// 12000 [C]
+        # define RT_CString		0x0FBA	// 4026	 [A]	// UNICODE
+
+        # define RT_EndDocument					0x03EA	// 1002
+
+        powerpoint_document = bytearray(self.fp.open('PowerPoint Document').read())
+        current_user = bytearray(self.fp.open('Current User').read())
+
+        # Get User Edit Offset
+        current_offset = struct.unpack('<I', current_user[16 : 20])
+
+        # Set Chain
+        # Set User Edit Chain
+        tmpHeader_option = powerpoint_document[current_offset : current_offset + 2]
+        tmpHeader_type = powerpoint_document[current_offset + 2 : current_offset + 4]
+        tmpHeader_length = powerpoint_document[current_offset + 4 : current_offset + 8]
+        last_user_edit_atom_offset = 0
+        persist_ptr_incremental_block_offset = 0
+
+
 
     def __parse_ppt_damaged__(self):
         raise NotImplementedError
@@ -901,7 +1362,11 @@ class Compound:
 
 
     def parse_ppt(self):
-        raise NotImplementedError
+        if self.isDamaged == self.CONST_DOCUMENT_NORMAL:
+            self.__parse_ppt_normal__()
+        elif self.isDamaged == self.CONST_DOCUMENT_DAMAGED:
+            self.__parse_ppt_damaged__()
+
 
     def parse_doc(self):
         if self.isDamaged == self.CONST_DOCUMENT_NORMAL:
